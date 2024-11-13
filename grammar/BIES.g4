@@ -21,18 +21,23 @@ program: (statement)* EOF;
 
 statement: letDeclaration 
          | constDeclaration 
-         | expression 
+         | expressionStatement 
          | functionDeclaration
-         | ifStatement // Añadido para manejar `if`
+         | returnStatement
+         | ifStatement
          ;
 
-letDeclaration: 'let' ID '=' expression ';'?;
-constDeclaration: 'const' ID '=' expression ';'?;
+letDeclaration: 'let' ID '=' expression ';'? ;
+constDeclaration: 'const' ID '=' expression ';'? ;
 functionDeclaration: 'fun' ID '(' parameterList? ')' block;
+returnStatement: 'return' expression? ';'?;
+expressionStatement: expression ';'?;
 
 parameterList: ID (',' ID)*;
 
-expression: term (( '+' | '-' | '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)*; // Modificado para incluir operadores de comparación
+expression: comparison (( '+' | '-' ) comparison)*;
+
+comparison: term (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)?;
 
 term: factor (( '*' | '/' ) factor)*;
 
@@ -44,9 +49,7 @@ factor: INT
       ;
 
 functionCall: ID '(' argumentList? ')';
-
 argumentList: expression (',' expression)*;
 
 block: '{' (statement)* '}';
-
-ifStatement: IF '(' expression ')' block (ELSE block)?; // Nueva regla para `if-else`
+ifStatement: 'if' '(' expression ')' block (ELSE block)?;

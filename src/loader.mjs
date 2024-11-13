@@ -42,16 +42,16 @@ class Loader extends biesGrammarVisitor {
 
     // Sobreescribimos el visitExpression para manejar las expresiones e imprimir
     visitExpression(ctx) {
-        const terms = ctx.term();
-        let result = this.visit(terms[0]);
-        this.printNode('Expression', { term: result });
+        const comparisons = ctx.comparison(); // Ajuste para usar comparación en lugar de término
+        let result = this.visit(comparisons[0]);
+        this.printNode('Expression', { comparison: result });
 
-        // Si hay más términos, recorremos y los imprimimos
-        for (let i = 1; i < terms.length; i++) {
-            const operator = ctx.getChild(2 * i - 1).getText(); // Obtiene el operador
-            const termValue = this.visit(terms[i]);
+        // Si hay más términos (manejo de operaciones aritméticas)
+        for (let i = 1; i < comparisons.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText(); // Obtener operador aritmético
+            const comparisonValue = this.visit(comparisons[i]);
             this.printNode('Operator', { operator });
-            this.printNode('Term', { termValue });
+            this.printNode('Comparison', { comparisonValue });
         }
 
         return result;
@@ -93,6 +93,31 @@ class Loader extends biesGrammarVisitor {
             this.printNode('Factor (Expression)', { value });
             return value;
         }
+    }
+
+    // Añadir al visitor para manejar comparaciones
+    visitComparison(ctx) {
+        const terms = ctx.term(); // Obtener los términos que están siendo comparados
+        let result = this.visit(terms[0]); // Visitar el primer término
+        this.printNode('Comparison', { term: result });
+
+        // Si hay un operador relacional, procesarlo
+        if (ctx.getChildCount() > 1) {
+            const operator = ctx.getChild(1).getText(); // Obtener el operador de comparación (>, <, etc.)
+            const rightTerm = this.visit(terms[1]); // Visitar el segundo término
+            this.printNode('Operator', { operator });
+            this.printNode('RightTerm', { term: rightTerm });
+
+            // Aquí puedes decidir cómo manejar el resultado, por ejemplo,
+            // retornando una estructura que represente la comparación
+            result = {
+                left: result,
+                operator,
+                right: rightTerm
+            };
+        }
+
+        return result;
     }
 
     // Puedes agregar otros métodos visit para manejar las demás reglas...

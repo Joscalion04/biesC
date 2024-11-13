@@ -1,3 +1,3 @@
 import parseBIESCode from './src/runner.mjs';
 
-parseBIESCode("./test/testIF.bies");
+parseBIESCode("./test/test1.bies");
