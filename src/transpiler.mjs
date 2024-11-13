@@ -7,7 +7,7 @@ class Transpiler {
 
     // Genera las instrucciones para una declaración let
     transpileLetDeclaration(id, value) {
-        // Transpila la declaración let con el valor recibido
+        // Para la declaración let, simplemente generamos la instrucción LDV
         this.instructions.push(`LDV ${value}`);
     }
 
@@ -24,11 +24,12 @@ class Transpiler {
     }
 
     // Transpila una llamada a función
-    transpileFunctionCall(node) {
-        node.args.forEach(arg => {
+    transpileFunctionCall(functionName, args) {
+        // Emitir la llamada a función con los argumentos
+        args.forEach(arg => {
             this.instructions.push(`PUSH ${arg}`);
         });
-        this.instructions.push(`CALL ${node.functionName}`);
+        this.instructions.push(`CALL ${functionName}`);
     }
 
     // Método para obtener el código transpilado final
