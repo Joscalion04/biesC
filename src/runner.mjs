@@ -4,15 +4,45 @@ import Loader from "./loader.mjs";
 import biesGrammarLexer from '../parser/biesLexer.js';
 import biesGrammarParser from '../parser/biesParser.js';
 
-function parseBIESCode(input) {
-  const chars = new antlr4.InputStream(input);
-  const lexer = new BIESLexer(chars);
-  const tokens = new antlr4.CommonTokenStream(lexer);
-  const parser = new BIESParser(tokens);
-  parser.buildParseTrees = true;
-  const tree = parser.program(); // punto de entrada en la gramática
+function parseBIESCode(inputFile) {
+   /**
+    * Contenido del archivo leído como una cadena.
+    * @type {string}
+    */
+   const input = fs.readFileSync(inputFile,'utf-8');
 
-  // Recorrer el árbol y construir el AST si es necesario
-  // Esto puede incluir visitantes personalizados para cada nodo del árbol
-  return tree;
+   // De archivo a stream de caracteres.
+   const chars = new antlr4.InputStream(input);
+
+   /**
+   * Instancia del lexer para procesar los caracteres del archivo.
+   * @type {biesGrammarLexer}
+   */
+   const lexer = new biesGrammarLexer(chars);
+
+   // Tokeniza el flujo de caracteres.
+   const tokens = new antlr4.CommonTokenStream(lexer);
+
+   /**
+   * Instancia del parser que genera el árbol de sintaxis abstracta (AST).
+   * @type {biesGrammarParser}
+   */
+   const parser = new biesGrammarParser(tokens);
+
+   //Construye el AST.
+   parser.buildParseTrees = true;
+
+   /**
+   * El árbol sintáctico resultante después del análisis.
+   * @type {ParseTree}
+   */
+   const AST = parser.program();
+
+   // Se necesita un loader que pase del AST a la máquina virtual.
+
+   //Visita el AST.
+   const loader = new Loader();
+   loader.visit(AST);
 }
+
+export default parseBIESCode;

@@ -1,2 +1,2 @@
-print("Testing helloworld Version 0 ***")
- print("Hello World!")
+let x = 10;
+const y = "Hello, world";

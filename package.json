@@ -2,6 +2,7 @@
   "name": "biesc",
   "version": "1.0.0",
   "description": "Repositoirio para almacenar el compilador para el lenguaje bies",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
