@@ -17,10 +17,33 @@ COMMENT: '//' ~[\r\n]* -> skip;
 WS: [ \t\r\n]+ -> skip;
 
 // Rules
-program: (statement)*;
-statement: letDeclaration | constDeclaration | expression;
-letDeclaration: 'let' ID '=' expression;
-constDeclaration: 'const' ID '=' expression;
-expression: term (( '+' | '-' ) term)* | functionExpr;
+program: (statement)* EOF;
+
+statement: letDeclaration 
+         | constDeclaration 
+         | expression 
+         | functionDeclaration
+         ;
+
+letDeclaration: 'let' ID '=' expression ';'?;
+constDeclaration: 'const' ID '=' expression ';'?;
+functionDeclaration: 'fun' ID '(' parameterList? ')' block;
+
+parameterList: ID (',' ID)*;
+
+expression: term (( '+' | '-' ) term)*;
+
 term: factor (( '*' | '/' ) factor)*;
-factor: INT | ID | STRING | '(' expression ')';
+
+factor: INT 
+      | ID 
+      | STRING 
+      | '(' expression ')' 
+      | functionCall
+      ;
+
+functionCall: ID '(' argumentList? ')';
+
+argumentList: expression (',' expression)*;
+
+block: '{' (statement)* '}';
