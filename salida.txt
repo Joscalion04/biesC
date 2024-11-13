@@ -1,97 +1,24 @@
-Factor (INT): , {"value":10}
-Term: , {"factor":10}
-Comparison: , {"term":10}
-Expression: , {"comparison":10}
-LetDeclaration: , {"id":"x","value":10}
-Factor (INT): , {"value":20}
-Term: , {"factor":20}
-Comparison: , {"term":20}
-Expression: , {"comparison":20}
-ConstDeclaration: , {"id":"y","value":20}
-FunctionDeclaration: , {"functionName":"add","params":["a","b"]}
-Factor (ID): , {"id":"a"}
-Term: , {"factor":"a"}
-Comparison: , {"term":"a"}
-Expression: , {"comparison":"a"}
-Factor (ID): , {"id":"b"}
-Term: , {"factor":"b"}
-Comparison: , {"term":"b"}
-Operator: , {"operator":"+"}
-Comparison: , {"comparisonValue":"b"}
-FunctionDeclaration: , {"functionName":"multiply","params":["a","b"]}
-Factor (ID): , {"id":"a"}
-Term: , {"factor":"a"}
-Factor (ID): , {"id":"b"}
-Operator: , {"operator":"*"}
-Factor: , {"factorValue":"b"}
-Comparison: , {"term":{"left":"a","operator":"*","right":"b"}}
-Expression: , {"comparison":{"left":"a","operator":"*","right":"b"}}
 Factor (ID): , {"id":"x"}
 Term: , {"factor":"x"}
 Comparison: , {"term":"x"}
-Factor (INT): , {"value":5}
-Term: , {"factor":5}
+Factor (ID): , {"id":"y"}
+Term: , {"factor":"y"}
 Operator: , {"operator":">"}
-RightTerm: , {"term":5}
-Expression: , {"comparison":{"left":"x","operator":">","right":5}}
-IfStatement: , {"condition":{"left":"x","operator":">","right":5}}
-IfBlock: , {}
+RightTerm: , {"term":"y"}
+Expression: , {"comparison":{"left":"x","operator":">","right":"y"}}
 Factor (ID): , {"id":"x"}
 Term: , {"factor":"x"}
 Comparison: , {"term":"x"}
-Expression: , {"comparison":"x"}
-Factor (ID): , {"id":"y"}
-Term: , {"factor":"y"}
-Comparison: , {"term":"y"}
-Expression: , {"comparison":"y"}
-FunctionCall: , {"functionName":"add","args":["x","y"]}
-Term: , {"factor":{"type":"FunctionCall","functionName":"add","args":["x","y"]}}
-Comparison: , {"term":{"type":"FunctionCall","functionName":"add","args":["x","y"]}}
-Expression: , {"comparison":{"type":"FunctionCall","functionName":"add","args":["x","y"]}}
-LetDeclaration: , {"id":"result","value":{"type":"FunctionCall","functionName":"add","args":["x","y"]}}
-ElseBlock: , {}
-Factor (ID): , {"id":"x"}
-Term: , {"factor":"x"}
-Comparison: , {"term":"x"}
-Expression: , {"comparison":"x"}
-Factor (ID): , {"id":"y"}
-Term: , {"factor":"y"}
-Comparison: , {"term":"y"}
-Expression: , {"comparison":"y"}
-FunctionCall: , {"functionName":"multiply","args":["x","y"]}
-Term: , {"factor":{"type":"FunctionCall","functionName":"multiply","args":["x","y"]}}
-Comparison: , {"term":{"type":"FunctionCall","functionName":"multiply","args":["x","y"]}}
-Expression: , {"comparison":{"type":"FunctionCall","functionName":"multiply","args":["x","y"]}}
-LetDeclaration: , {"id":"result","value":{"type":"FunctionCall","functionName":"multiply","args":["x","y"]}}
-Factor (INT): , {"value":5}
-Term: , {"factor":5}
-Comparison: , {"term":5}
-Expression: , {"comparison":5}
 Factor (INT): , {"value":10}
 Term: , {"factor":10}
-Comparison: , {"term":10}
-Expression: , {"comparison":10}
-FunctionCall: , {"functionName":"add","args":[5,10]}
-Term: , {"factor":{"type":"FunctionCall","functionName":"add","args":[5,10]}}
-Comparison: , {"term":{"type":"FunctionCall","functionName":"add","args":[5,10]}}
-Expression: , {"comparison":{"type":"FunctionCall","functionName":"add","args":[5,10]}}
+Operator: , {"operator":"=="}
+RightTerm: , {"term":10}
+Expression: , {"comparison":{"left":"x","operator":"==","right":10}}
 Factor (ID): , {"id":"x"}
 Term: , {"factor":"x"}
 Comparison: , {"term":"x"}
-Expression: , {"comparison":"x"}
-Factor (INT): , {"value":1}
-Term: , {"factor":1}
-Comparison: , {"term":1}
-Operator: , {"operator":"+"}
-Comparison: , {"comparisonValue":1}
 Factor (ID): , {"id":"y"}
 Term: , {"factor":"y"}
-Factor (INT): , {"value":2}
-Operator: , {"operator":"*"}
-Factor: , {"factorValue":2}
-Comparison: , {"term":{"left":"y","operator":"*","right":2}}
-Expression: , {"comparison":{"left":"y","operator":"*","right":2}}
-FunctionCall: , {"functionName":"multiply","args":[{"left":"x","operator":"+","right":1},{"left":"y","operator":"*","right":2}]}
-Term: , {"factor":{"type":"FunctionCall","functionName":"multiply","args":[{"left":"x","operator":"+","right":1},{"left":"y","operator":"*","right":2}]}}
-Comparison: , {"term":{"type":"FunctionCall","functionName":"multiply","args":[{"left":"x","operator":"+","right":1},{"left":"y","operator":"*","right":2}]}}
-Expression: , {"comparison":{"type":"FunctionCall","functionName":"multiply","args":[{"left":"x","operator":"+","right":1},{"left":"y","operator":"*","right":2}]}}
+Operator: , {"operator":"!="}
+RightTerm: , {"term":"y"}
+Expression: , {"comparison":{"left":"x","operator":"!=","right":"y"}}
