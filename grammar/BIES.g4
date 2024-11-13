@@ -23,6 +23,7 @@ statement: letDeclaration
          | constDeclaration 
          | expression 
          | functionDeclaration
+         | ifStatement // Añadido para manejar `if`
          ;
 
 letDeclaration: 'let' ID '=' expression ';'?;
@@ -31,7 +32,7 @@ functionDeclaration: 'fun' ID '(' parameterList? ')' block;
 
 parameterList: ID (',' ID)*;
 
-expression: term (( '+' | '-' ) term)*;
+expression: term (( '+' | '-' | '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)*; // Modificado para incluir operadores de comparación
 
 term: factor (( '*' | '/' ) factor)*;
 
@@ -47,3 +48,5 @@ functionCall: ID '(' argumentList? ')';
 argumentList: expression (',' expression)*;
 
 block: '{' (statement)* '}';
+
+ifStatement: IF '(' expression ')' block (ELSE block)?; // Nueva regla para `if-else`

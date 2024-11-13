@@ -1,3 +1,5 @@
-let x = 5;
-const y = "hello";
-let z = x + 10;
+if (x > 5) {
+    let y = x + 10;
+} else {
+    let y = 0;
+}

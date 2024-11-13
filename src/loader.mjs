@@ -7,6 +7,23 @@ class Loader extends biesGrammarVisitor {
         console.log(`${indent}${nodeType}:`, details);
     }
 
+    visitIfStatement(ctx) {
+      const condition = this.visit(ctx.expression()); // Evaluamos la condición del 'if'
+      this.printNode('IfStatement', { condition });
+
+      // Visitamos las declaraciones dentro del bloque 'if'
+      this.printNode('IfBlock');
+      this.visit(ctx.block(0)); // Primer bloque (if)
+
+      // Si hay un bloque 'else', lo procesamos
+      if (ctx.ELSE()) {
+          this.printNode('ElseBlock');
+          this.visit(ctx.block(1)); // Segundo bloque (else)
+      }
+
+      return null;
+    }
+
     // Sobreescribimos el visitLetDeclaration para imprimir el nodo
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
