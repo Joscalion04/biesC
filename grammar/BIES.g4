@@ -19,10 +19,10 @@ WS: [ \t\r\n]+ -> skip;
 // Rules
 program: (statement)* EOF;
 
-statement: letDeclaration 
+statement: functionDeclaration  // Prioridad a la declaración de funciones
+         | letDeclaration 
          | constDeclaration 
          | expressionStatement 
-         | functionDeclaration
          | returnStatement
          | ifStatement
          ;
@@ -30,8 +30,8 @@ statement: letDeclaration
 letDeclaration: 'let' ID '=' expression ';'? ;
 constDeclaration: 'const' ID '=' expression ';'? ;
 functionDeclaration: 'fun' ID '(' parameterList? ')' block;
-returnStatement: 'return' expression? ';'?;
-expressionStatement: expression ';'?;
+returnStatement: 'return' expression? ';'? ;
+expressionStatement: expression ';'? ;
 
 parameterList: ID (',' ID)*;
 
@@ -52,4 +52,5 @@ functionCall: ID '(' argumentList? ')';
 argumentList: expression (',' expression)*;
 
 block: '{' (statement)* '}';
+
 ifStatement: 'if' '(' expression ')' block (ELSE block)?;

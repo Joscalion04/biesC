@@ -20,7 +20,7 @@ const serializedATN = [4,1,31,155,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
 98,1,0,0,0,20,103,1,0,0,0,22,119,1,0,0,0,24,121,1,0,0,0,26,128,1,0,0,0,28,
 136,1,0,0,0,30,145,1,0,0,0,32,34,3,2,1,0,33,32,1,0,0,0,34,37,1,0,0,0,35,
 33,1,0,0,0,35,36,1,0,0,0,36,38,1,0,0,0,37,35,1,0,0,0,38,39,5,0,0,1,39,1,
-1,0,0,0,40,47,3,4,2,0,41,47,3,6,3,0,42,47,3,12,6,0,43,47,3,8,4,0,44,47,3,
+1,0,0,0,40,47,3,8,4,0,41,47,3,4,2,0,42,47,3,6,3,0,43,47,3,12,6,0,44,47,3,
 10,5,0,45,47,3,30,15,0,46,40,1,0,0,0,46,41,1,0,0,0,46,42,1,0,0,0,46,43,1,
 0,0,0,46,44,1,0,0,0,46,45,1,0,0,0,47,3,1,0,0,0,48,49,5,18,0,0,49,50,5,27,
 0,0,50,51,5,1,0,0,51,53,3,16,8,0,52,54,5,2,0,0,53,52,1,0,0,0,53,54,1,0,0,
@@ -128,28 +128,28 @@ export default class biesParser extends antlr4.Parser {
 	        this.state = 46;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case 18:
+	        case 21:
 	            this.enterOuterAlt(localctx, 1);
 	            this.state = 40;
+	            this.functionDeclaration();
+	            break;
+	        case 18:
+	            this.enterOuterAlt(localctx, 2);
+	            this.state = 41;
 	            this.letDeclaration();
 	            break;
 	        case 19:
-	            this.enterOuterAlt(localctx, 2);
-	            this.state = 41;
+	            this.enterOuterAlt(localctx, 3);
+	            this.state = 42;
 	            this.constDeclaration();
 	            break;
 	        case 3:
 	        case 27:
 	        case 28:
 	        case 29:
-	            this.enterOuterAlt(localctx, 3);
-	            this.state = 42;
-	            this.expressionStatement();
-	            break;
-	        case 21:
 	            this.enterOuterAlt(localctx, 4);
 	            this.state = 43;
-	            this.functionDeclaration();
+	            this.expressionStatement();
 	            break;
 	        case 26:
 	            this.enterOuterAlt(localctx, 5);
@@ -847,6 +847,10 @@ class StatementContext extends antlr4.ParserRuleContext {
         this.ruleIndex = biesParser.RULE_statement;
     }
 
+	functionDeclaration() {
+	    return this.getTypedRuleContext(FunctionDeclarationContext,0);
+	};
+
 	letDeclaration() {
 	    return this.getTypedRuleContext(LetDeclarationContext,0);
 	};
@@ -857,10 +861,6 @@ class StatementContext extends antlr4.ParserRuleContext {
 
 	expressionStatement() {
 	    return this.getTypedRuleContext(ExpressionStatementContext,0);
-	};
-
-	functionDeclaration() {
-	    return this.getTypedRuleContext(FunctionDeclarationContext,0);
 	};
 
 	returnStatement() {

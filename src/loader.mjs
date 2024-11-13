@@ -7,73 +7,78 @@ class Loader extends biesGrammarVisitor {
         console.log(`${indent}${nodeType}:`, details);
     }
 
-    visitIfStatement(ctx) {
-      const condition = this.visit(ctx.expression()); // Evaluamos la condición del 'if'
-      this.printNode('IfStatement', { condition });
+    // Visita una declaración de función
+    visitFunctionDeclaration(ctx) {
+        const functionName = ctx.ID().getText();
+        const params = ctx.parameterList() ? ctx.parameterList().ID().map(param => param.getText()) : [];
+        this.printNode('FunctionDeclaration', { functionName, params });
 
-      // Visitamos las declaraciones dentro del bloque 'if'
-      this.printNode('IfBlock');
-      this.visit(ctx.block(0)); // Primer bloque (if)
+        // Visitar el cuerpo de la función
+        this.visit(ctx.block());
 
-      // Si hay un bloque 'else', lo procesamos
-      if (ctx.ELSE()) {
-          this.printNode('ElseBlock');
-          this.visit(ctx.block(1)); // Segundo bloque (else)
-      }
-
-      return null;
+        return {
+            type: 'FunctionDeclaration',
+            name: functionName,
+            params,
+            body: ctx.block().getText()
+        };
     }
 
-    // Sobreescribimos el visitLetDeclaration para imprimir el nodo
+    // Visita una declaración 'let'
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
         const value = this.visit(ctx.expression());
-        this.printNode('LetDeclaration', { id, value }, 0); // profundidad 0 o según sea necesario
+        this.printNode('LetDeclaration', { id, value });
         return { type: 'LetDeclaration', id, value };
     }
 
-    // Sobreescribimos el visitConstDeclaration para imprimir el nodo
+    // Visita una declaración 'const'
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
         const value = this.visit(ctx.expression());
-        this.printNode('ConstDeclaration', { id, value }, 0);
+        this.printNode('ConstDeclaration', { id, value });
         return { type: 'ConstDeclaration', id, value };
     }
 
-    // Sobreescribimos el visitExpression para manejar las expresiones e imprimir
+    // Visita una expresión
     visitExpression(ctx) {
-        const comparisons = ctx.comparison(); // Ajuste para usar comparación en lugar de término
+        const comparisons = ctx.comparison();
+        if (comparisons.length === 0) return null;
+
         let result = this.visit(comparisons[0]);
         this.printNode('Expression', { comparison: result });
 
-        // Si hay más términos (manejo de operaciones aritméticas)
         for (let i = 1; i < comparisons.length; i++) {
-            const operator = ctx.getChild(2 * i - 1).getText(); // Obtener operador aritmético
+            const operator = ctx.getChild(2 * i - 1).getText();
             const comparisonValue = this.visit(comparisons[i]);
             this.printNode('Operator', { operator });
             this.printNode('Comparison', { comparisonValue });
+            result = { left: result, operator, right: comparisonValue };
         }
 
         return result;
     }
 
-    // Visitar términos
+    // Visita términos
     visitTerm(ctx) {
         const factors = ctx.factor();
+        if (!factors || factors.length === 0) return null;
+
         let result = this.visit(factors[0]);
         this.printNode('Term', { factor: result });
 
         for (let i = 1; i < factors.length; i++) {
-            const operator = ctx.getChild(2 * i - 1).getText(); // Obtiene el operador
+            const operator = ctx.getChild(2 * i - 1).getText();
             const factorValue = this.visit(factors[i]);
             this.printNode('Operator', { operator });
             this.printNode('Factor', { factorValue });
+            result = { left: result, operator, right: factorValue };
         }
 
         return result;
     }
 
-    // Visitar factores
+    // Visita factores
     visitFactor(ctx) {
         if (ctx.INT()) {
             const value = parseInt(ctx.INT().getText(), 10);
@@ -88,28 +93,29 @@ class Loader extends biesGrammarVisitor {
             this.printNode('Factor (STRING)', { str });
             return str;
         } else if (ctx.expression()) {
-            // Si es una subexpresión entre paréntesis
             const value = this.visit(ctx.expression());
             this.printNode('Factor (Expression)', { value });
             return value;
+        } else if (ctx.functionCall()) {
+            return this.visit(ctx.functionCall());
         }
+        return null;
     }
 
-    // Añadir al visitor para manejar comparaciones
+    // Visita una comparación
     visitComparison(ctx) {
-        const terms = ctx.term(); // Obtener los términos que están siendo comparados
-        let result = this.visit(terms[0]); // Visitar el primer término
+        const terms = ctx.term();
+        if (terms.length === 0) return null;
+
+        let result = this.visit(terms[0]);
         this.printNode('Comparison', { term: result });
 
-        // Si hay un operador relacional, procesarlo
         if (ctx.getChildCount() > 1) {
-            const operator = ctx.getChild(1).getText(); // Obtener el operador de comparación (>, <, etc.)
-            const rightTerm = this.visit(terms[1]); // Visitar el segundo término
+            const operator = ctx.getChild(1).getText();
+            const rightTerm = this.visit(terms[1]);
             this.printNode('Operator', { operator });
             this.printNode('RightTerm', { term: rightTerm });
 
-            // Aquí puedes decidir cómo manejar el resultado, por ejemplo,
-            // retornando una estructura que represente la comparación
             result = {
                 left: result,
                 operator,
@@ -120,7 +126,29 @@ class Loader extends biesGrammarVisitor {
         return result;
     }
 
-    // Puedes agregar otros métodos visit para manejar las demás reglas...
+    // Visita una llamada a función
+    visitFunctionCall(ctx) {
+        const functionName = ctx.ID().getText();
+        const args = ctx.argumentList() ? ctx.argumentList().expression().map(expr => this.visit(expr)) : [];
+        this.printNode('FunctionCall', { functionName, args });
+        return { type: 'FunctionCall', functionName, args };
+    }
+
+    // Visita una declaración 'if'
+    visitIfStatement(ctx) {
+        const condition = this.visit(ctx.expression());
+        this.printNode('IfStatement', { condition });
+
+        this.printNode('IfBlock');
+        this.visit(ctx.block(0));
+
+        if (ctx.ELSE()) {
+            this.printNode('ElseBlock');
+            this.visit(ctx.block(1));
+        }
+
+        return null;
+    }
 }
 
 export default Loader;
