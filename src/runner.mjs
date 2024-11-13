@@ -9,7 +9,7 @@ function parseBIESCode(inputFile) {
     * Contenido del archivo leído como una cadena.
     * @type {string}
     */
-   const input = fs.readFileSync(inputFile,'utf-8');
+   const input = fs.readFileSync(inputFile, 'utf-8');
 
    // De archivo a stream de caracteres.
    const chars = new antlr4.InputStream(input);
@@ -29,7 +29,7 @@ function parseBIESCode(inputFile) {
    */
    const parser = new biesGrammarParser(tokens);
 
-   //Construye el AST.
+   // Construye el AST.
    parser.buildParseTrees = true;
 
    /**
@@ -38,14 +38,15 @@ function parseBIESCode(inputFile) {
    */
    const AST = parser.program();
 
-   // Se necesita un loader que pase del AST a la máquina virtual.
-
-   //Visita el AST.
+   // Crea un visitor (Loader) para recorrer el AST.
    const loader = new Loader();
    loader.visit(AST);
 
-   // Devuelve el AST o cualquier resultado que necesites
-   return loader.getResults(); // Asegúrate de que Loader tenga un método getResults que devuelva los detalles necesarios
+   // Devuelve y muestra los resultados (diccionarios de atributos).
+   console.log("DICCIONARIOS DE ATRIBUTOS:");
+   console.log(JSON.stringify(loader.getAttributes(), null, 2)); // Ajusta el método si necesitas llamar a getAttributes() u otro método que devuelva los diccionarios
+
+   return loader.getResults(); // También puedes devolver los resultados que desees
 }
 
 export default parseBIESCode;
