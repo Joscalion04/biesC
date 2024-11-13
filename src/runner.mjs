@@ -43,6 +43,9 @@ function parseBIESCode(inputFile) {
    //Visita el AST.
    const loader = new Loader();
    loader.visit(AST);
+
+   // Devuelve el AST o cualquier resultado que necesites
+   return loader.getResults(); // Asegúrate de que Loader tenga un método getResults que devuelva los detalles necesarios
 }
 
 export default parseBIESCode;

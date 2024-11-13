@@ -1,0 +1,5 @@
+{
+  "outfile": "salida.txt",
+  "errfile": "errores.txt",
+  "trace": "0"
+}

@@ -1,10 +1,23 @@
 import biesGrammarVisitor from '../parser/biesVisitor.js';
 
 class Loader extends biesGrammarVisitor {
+
+    constructor() {
+        super();
+        this.results = [];
+    }
+
     // Función auxiliar para imprimir nodos con indentación
     printNode(nodeType, details = {}, depth = 0) {
         const indent = ' '.repeat(depth * 2); // Crear una indentación de 2 espacios por nivel
         console.log(`${indent}${nodeType}:`, details);
+        const result = `${indent}${nodeType}: , ${JSON.stringify(details)}`; 
+       // console.log(result);
+        this.results.push(result);
+    }
+
+    getResults() {
+        return this.results;
     }
 
     // Visita una declaración de función

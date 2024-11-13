@@ -19,20 +19,6 @@ function packman_int(input) {
     return [input.slice(0, i), input.slice(i)];
 }
 
-// Prueba para eliminar espacios en blanco al inicio de una cadena
-function test_1() {
-    const input = '   let x = 1';
-    const result = packman_ws(input);
-    console.log(result); // 'let x = 1'
-}
-
-// Prueba para extraer solo los números al inicio de una cadena con espacios alrededor
-function test_2() {
-    const input = '  123 ';
-    const [digits, rest] = packman_int(packman_ws(input));
-    console.log(digits); // '123'
-}
-
 // Lee el archivo y genera un árbol de sintaxis
 function parser(filename) {
     const content = fs.readFileSync(filename, 'utf8');
@@ -281,16 +267,7 @@ function versionCompleja0(outputFileName) {
     console.log(`Código generado en el archivo ${outputFileName}`);
 }
 
-// Prueba el parser en el archivo 'TestBies.bies' y muestra el árbol de sintaxis generado
-function test_parser() {
-    const ast = parser('TestBies.bies');
-    console.log(JSON.stringify(ast, null, 2));
-}
 
 // Ejecutar pruebas
-test_1();
-test_2();
 versionCompleja0('versionCompleja0.js');
 versionCompleja3('versionCompleja3.js');
-
-//test_parser();
