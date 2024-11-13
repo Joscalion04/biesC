@@ -21,6 +21,6 @@ program: (statement)*;
 statement: letDeclaration | constDeclaration | expression;
 letDeclaration: 'let' ID '=' expression;
 constDeclaration: 'const' ID '=' expression;
-expression: term (( '+' | '-' ) term)*;
+expression: term (( '+' | '-' ) term)* | functionExpr;
 term: factor (( '*' | '/' ) factor)*;
 factor: INT | ID | STRING | '(' expression ')';
