@@ -2,7 +2,13 @@ let x = 10;
 const y = 20;
 
 fun add(a, b) {
-    return a + b;
+    fun test(a, b) {
+        fun test2(a, b) {
+            return a + b;
+        }
+        return test2(a, b);
+    }
+    return test(a, b);
 }
 
 fun multiply(a, b) {
