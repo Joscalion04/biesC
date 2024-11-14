@@ -30,6 +30,12 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
+	// Visit a parse tree produced by biesParser#letInDeclaration.
+	visitLetInDeclaration(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 	// Visit a parse tree produced by biesParser#functionDeclaration.
 	visitFunctionDeclaration(ctx) {
 	  return this.visitChildren(ctx);
@@ -48,6 +54,12 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
+	// Visit a parse tree produced by biesParser#printStatement.
+	visitPrintStatement(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 	// Visit a parse tree produced by biesParser#parameterList.
 	visitParameterList(ctx) {
 	  return this.visitChildren(ctx);
@@ -56,6 +68,12 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 
 	// Visit a parse tree produced by biesParser#expression.
 	visitExpression(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#assignment.
+	visitAssignment(ctx) {
 	  return this.visitChildren(ctx);
 	}
 
@@ -98,6 +116,18 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 
 	// Visit a parse tree produced by biesParser#ifStatement.
 	visitIfStatement(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#lambdaExpression.
+	visitLambdaExpression(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#listAccess.
+	visitListAccess(ctx) {
 	  return this.visitChildren(ctx);
 	}
 

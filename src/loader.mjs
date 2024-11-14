@@ -23,13 +23,16 @@ class Loader extends biesGrammarVisitor {
         this.results.push(details);
     }
 
-    // Factor principal que maneja valores literales
+    // Manejo de factores como valores literales, identificadores, expresiones anidadas, etc.
     visitFactor(ctx) {
         if (ctx.INT()) {
             return parseInt(ctx.INT().getText());
         }
+        if (ctx.FLOAT()) {
+            return parseFloat(ctx.FLOAT().getText());
+        }
         if (ctx.STRING()) {
-            return ctx.STRING().getText().slice(1, -1); // Elimina las comillas
+            return ctx.STRING().getText().slice(1, -1); // Remueve las comillas
         }
         if (ctx.ID()) {
             return ctx.ID().getText();
@@ -50,7 +53,7 @@ class Loader extends biesGrammarVisitor {
         const letDetails = {
             type: 'LetDeclaration',
             id,
-            value: value
+            value
         };
         this.addAttribute(letDetails);
         return letDetails;
@@ -63,13 +66,35 @@ class Loader extends biesGrammarVisitor {
         const constDetails = {
             type: 'ConstDeclaration',
             id,
-            value: value
+            value
         };
         this.addAttribute(constDetails);
         return constDetails;
     }
 
     visitExpression(ctx) {
+        const assignments = ctx.assignment();
+        if (assignments.length === 0) return null;
+
+        let result = this.visit(assignments[0]);
+
+        for (let i = 1; i < assignments.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const assignmentValue = this.visit(assignments[i]);
+            const expressionDetails = {
+                type: 'BinaryExpression',
+                left: result,
+                operator,
+                right: assignmentValue
+            };
+            this.addAttribute(expressionDetails);
+            result = expressionDetails;
+        }
+
+        return result;
+    }
+
+    visitAssignment(ctx) {
         const comparisons = ctx.comparison();
         if (comparisons.length === 0) return null;
 
@@ -78,14 +103,14 @@ class Loader extends biesGrammarVisitor {
         for (let i = 1; i < comparisons.length; i++) {
             const operator = ctx.getChild(2 * i - 1).getText();
             const comparisonValue = this.visit(comparisons[i]);
-            const expressionDetails = {
-                type: 'BinaryExpression',
+            const assignmentDetails = {
+                type: 'AssignmentExpression',
                 left: result,
                 operator,
                 right: comparisonValue
             };
-            this.addAttribute(expressionDetails);
-            result = expressionDetails;
+            this.addAttribute(assignmentDetails);
+            result = assignmentDetails;
         }
 
         return result;
@@ -138,21 +163,41 @@ class Loader extends biesGrammarVisitor {
     visitFunctionCall(ctx) {
         const functionName = ctx.ID().getText();
         let args = [];
-
+    
         if (ctx.argumentList()) {
             args = ctx.argumentList().expression().map(expr => {
                 return this.visit(expr);
             });
         }
+    
+        // Si la función llamada es una función lambda, se debe procesar correctamente
+        if (this.functionAttributes[functionName]) {
+            const functionCallDetails = {
+                type: 'FunctionCall',
+                functionName,
+                args
+            };
+    
+            this.addAttribute(functionCallDetails);
+            return functionCallDetails;
+        }
+    
+        return null;
+    }
 
-        const functionCallDetails = {
-            type: 'FunctionCall',
-            functionName,
+    // Nuevo método para manejar el statement print
+    visitPrintStatement(ctx) {
+        const args = ctx.argumentList() 
+            ? ctx.argumentList().expression().map(expr => this.visit(expr))
+            : [];
+
+        const printDetails = {
+            type: 'PrintStatement',
             args
         };
 
-        this.addAttribute(functionCallDetails);
-        return functionCallDetails;
+        this.addAttribute(printDetails);
+        return printDetails;
     }
 
     visitFunctionDeclaration(ctx) {
