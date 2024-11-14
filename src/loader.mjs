@@ -31,10 +31,13 @@ class Loader extends biesGrammarVisitor {
             return parseFloat(ctx.FLOAT().getText());
         }
         if (ctx.STRING()) {
-            return ctx.STRING().getText().slice(1, -1); // Remueve las comillas
+            return ctx.STRING().getText().slice(1, -1);
         }
         if (ctx.ID()) {
             return ctx.ID().getText();
+        }
+        if (ctx.lambdaExpression()) {
+            return this.visit(ctx.lambdaExpression());
         }
         if (ctx.expression()) {
             return this.visit(ctx.expression());
@@ -42,37 +45,78 @@ class Loader extends biesGrammarVisitor {
         if (ctx.functionCall()) {
             return this.visit(ctx.functionCall());
         }
+        if (ctx.printStatement()) {
+            return this.visit(ctx.printStatement());
+        }
         return null;
-    }
-
-    visitLambdaExpression(ctx) {
-        const params = ctx.parameterList() 
-            ? ctx.parameterList().ID().map(param => param.getText()) 
-            : [];
-        const body = ctx.block() ? this.visit(ctx.block()) : this.visit(ctx.expression());
-
-        const lambdaDetails = {
-            type: 'LambdaExpression',
-            params,
-            body
-        };
-        this.addAttribute(lambdaDetails);
-
-        return lambdaDetails;
     }
 
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
+        
+        // Guardamos el valor original de processingLambda
+        const wasProcessingLambda = this.processingLambda;
+        this.processingLambda = true;
         const value = this.visit(ctx.expression());
+        this.processingLambda = wasProcessingLambda;
+
+        // Si el valor es una lambda
+        if (value && value.type === 'LambdaExpression') {
+            // Registrar la lambda como una función
+            this.functionAttributes[id] = this.initializeAttributes();
+            
+            // Crear los detalles de la función
+            const functionDetails = {
+                type: 'FunctionDeclaration',
+                name: id,
+                params: value.params
+            };
+
+            // Añadir la declaración de función al contexto global
+            const prevFunction = this.currentFunction;
+            this.currentFunction = id;
+            this.addAttribute(functionDetails);
+
+            // Añadir el cuerpo de la lambda
+            if (value.body && value.body.type === 'PrintStatement') {
+                this.functionAttributes[id].secuencia.push(value.body);
+            }
+
+            // Restaurar el contexto
+            this.currentFunction = prevFunction;
+        }
 
         const letDetails = {
             type: 'LetDeclaration',
             id,
             value
         };
+
         this.addAttribute(letDetails);
         return letDetails;
     }
+    
+
+    visitLambdaExpression(ctx) {
+        const params = ctx.parameterList() 
+            ? ctx.parameterList().ID().map(param => param.getText()) 
+            : [];
+
+        let body;
+        
+        if (ctx.block()) {
+            body = ctx.block().statement().map(stmt => this.visit(stmt));
+        } else if (ctx.expression()) {
+            body = this.visit(ctx.expression());
+        }
+
+        return {
+            type: 'LambdaExpression',
+            params,
+            body
+        };
+    }
+    
 
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
@@ -136,9 +180,7 @@ class Loader extends biesGrammarVisitor {
         let args = [];
 
         if (ctx.argumentList()) {
-            args = ctx.argumentList().expression().map(expr => {
-                return this.visit(expr);
-            });
+            args = ctx.argumentList().expression().map(expr => this.visit(expr));
         }
 
         const functionCallDetails = {
@@ -148,13 +190,7 @@ class Loader extends biesGrammarVisitor {
         };
 
         this.addAttribute(functionCallDetails);
-
-        if (this.functionAttributes[functionName]) {
-            return functionCallDetails;
-        }
-
-        // Lógica adicional para manejar llamadas a funciones lambda (si es necesario)
-        return null;
+        return functionCallDetails;
     }
 
     visitPrintStatement(ctx) {
@@ -164,10 +200,14 @@ class Loader extends biesGrammarVisitor {
 
         const printDetails = {
             type: 'PrintStatement',
-            args
+            args: args.flat()
         };
 
-        this.addAttribute(printDetails);
+        // Solo añadimos el print al contexto actual si no estamos dentro de una lambda
+        if (!this.processingLambda) {
+            this.addAttribute(printDetails);
+        }
+
         return printDetails;
     }
 
@@ -185,13 +225,15 @@ class Loader extends biesGrammarVisitor {
 
         this.addAttribute(functionDetails);
 
+        // Crear nuevo contexto de función si no existe
+        if (!this.functionAttributes[functionName]) {
+            this.functionAttributes[functionName] = this.initializeAttributes();
+        }
+
         const previousFunction = this.currentFunction;
         this.currentFunction = functionName;
 
-        if (!this.functionAttributes[this.currentFunction]) {
-            this.functionAttributes[this.currentFunction] = this.initializeAttributes();
-        }
-
+        // Visitar el bloque
         this.visit(ctx.block());
 
         this.currentFunction = previousFunction;
