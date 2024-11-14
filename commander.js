@@ -39,7 +39,7 @@ const errFile = options.e || config.errfile || `${sourceFile.replace(/\.bies$/, 
 const traceLevel = options.trace || config.trace || '0';
 
 // Verificar si el archivo fuente existe
-const filePath = `./test/${sourceFile}`;
+const filePath = `./test/test_unitarios/test1.bies${sourceFile}`;
 if (!fs.existsSync(filePath)) {
     console.error(`Error: El archivo "${filePath}" no existe.`);
     process.exit(1);
