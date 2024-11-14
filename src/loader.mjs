@@ -4,156 +4,109 @@ class Loader extends biesGrammarVisitor {
     constructor() {
         super();
         this.results = [];
-        this.attributes = {
-            functions: [],
+        this.globalContext = 'main';
+        this.currentFunction = this.globalContext;
+        this.functionAttributes = {};
+        this.functionAttributes[this.globalContext] = this.initializeAttributes();
+    }
+
+    initializeAttributes() {
+        return {
             variables: [],
             expressions: [],
-            operators: []
+            operators: [],
+            statements: []
         };
     }
 
-    // Función auxiliar para agregar información al diccionario y mantener resultados
     addAttribute(type, details) {
-        this.attributes[type].push(details);
+        if (this.currentFunction && this.functionAttributes[this.currentFunction]) {
+            this.functionAttributes[this.currentFunction][type].push(details);
+        }
         const result = `${type}: ${JSON.stringify(details)}`;
-        this.results.push(result);  // Para mantener el registro en el orden de visita
+        this.results.push(result);
     }
 
-    // Función auxiliar para imprimir nodos con indentación (opcional)
-    printNode(nodeType, details = {}, depth = 0) {
-        const indent = ' '.repeat(depth * 2); // Crear una indentación de 2 espacios por nivel
-        console.log(`${indent}${nodeType}:`, details);
-    }
-
-    getResults() {
-        return this.results;
-    }
-
-    getAttributes() {
-        return this.attributes;
-    }
-
-    // Visita una declaración de función
-    visitFunctionDeclaration(ctx) {
-        const functionName = ctx.ID().getText();
-        const params = ctx.parameterList() ? ctx.parameterList().ID().map(param => param.getText()) : [];
-        
-        const functionDetails = {
-            type: 'FunctionDeclaration',
-            name: functionName,
-            params,
-            body: ctx.block().getText()
-        };
-        
-        this.addAttribute('functions', functionDetails);
-        this.visit(ctx.block()); // Visitar el cuerpo de la función
-        return functionDetails;
-    }
-
-    // Visita una declaración 'let'
-    visitLetDeclaration(ctx) {
-        const id = ctx.ID().getText();
-        const value = this.visit(ctx.expression());
-        
-        const letDetails = { type: 'LetDeclaration', id, value };
-        this.addAttribute('variables', letDetails);
-        
-        return letDetails;
-    }
-
-    // Visita una declaración 'const'
-    visitConstDeclaration(ctx) {
-        const id = ctx.ID().getText();
-        const value = this.visit(ctx.expression());
-        
-        const constDetails = { type: 'ConstDeclaration', id, value };
-        this.addAttribute('variables', constDetails);
-        
-        return constDetails;
-    }
-
-    // Visita una expresión
-    visitExpression(ctx) {
-        const comparisons = ctx.comparison();
-        if (comparisons.length === 0) return null;
-
-        let result = this.visit(comparisons[0]);
-        this.addAttribute('expressions', { comparison: result });
-
-        for (let i = 1; i < comparisons.length; i++) {
-            const operator = ctx.getChild(2 * i - 1).getText();
-            const comparisonValue = this.visit(comparisons[i]);
-            
-            this.addAttribute('operators', { operator });
-            this.addAttribute('expressions', { comparisonValue });
-            
-            result = { left: result, operator, right: comparisonValue };
-        }
-
-        return result;
-    }
-
-    // Visita términos
-    visitTerm(ctx) {
-        const factors = ctx.factor();
-        if (!factors || factors.length === 0) return null;
-
-        let result = this.visit(factors[0]);
-        this.addAttribute('expressions', { factor: result });
-
-        for (let i = 1; i < factors.length; i++) {
-            const operator = ctx.getChild(2 * i - 1).getText();
-            const factorValue = this.visit(factors[i]);
-            
-            this.addAttribute('operators', { operator });
-            this.addAttribute('expressions', { factor: factorValue });
-            
-            result = { left: result, operator, right: factorValue };
-        }
-
-        return result;
-    }
-
-    // Visita factores
+    // Factor principal que maneja valores literales
     visitFactor(ctx) {
         if (ctx.INT()) {
-            const value = parseInt(ctx.INT().getText(), 10);
-            this.addAttribute('expressions', { type: 'INT', value });
-            return value;
-        } else if (ctx.ID()) {
-            const id = ctx.ID().getText();
-            this.addAttribute('expressions', { type: 'ID', id });
-            return id;
-        } else if (ctx.STRING()) {
-            const str = ctx.STRING().getText();
-            this.addAttribute('expressions', { type: 'STRING', str });
-            return str;
-        } else if (ctx.expression()) {
-            const value = this.visit(ctx.expression());
-            this.addAttribute('expressions', { type: 'Expression', value });
-            return value;
-        } else if (ctx.functionCall()) {
+            return parseInt(ctx.INT().getText());
+        }
+        if (ctx.STRING()) {
+            return ctx.STRING().getText().slice(1, -1); // Elimina las comillas
+        }
+        if (ctx.ID()) {
+            return ctx.ID().getText();
+        }
+        if (ctx.expression()) {
+            return this.visit(ctx.expression());
+        }
+        if (ctx.functionCall()) {
             return this.visit(ctx.functionCall());
         }
         return null;
     }
 
-    // Visita una comparación
+    visitLetDeclaration(ctx) {
+        const id = ctx.ID().getText();
+        const value = this.visit(ctx.expression());
+        
+        const letDetails = {
+            type: 'LetDeclaration',
+            id,
+            value: value
+        };
+        this.addAttribute('variables', letDetails);
+        return letDetails;
+    }
+
+    visitConstDeclaration(ctx) {
+        const id = ctx.ID().getText();
+        const value = this.visit(ctx.expression());
+        
+        const constDetails = {
+            type: 'ConstDeclaration',
+            id,
+            value: value
+        };
+        this.addAttribute('variables', constDetails);
+        return constDetails;
+    }
+
+    visitExpression(ctx) {
+        const comparisons = ctx.comparison();
+        if (comparisons.length === 0) return null;
+
+        let result = this.visit(comparisons[0]);
+
+        for (let i = 1; i < comparisons.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const comparisonValue = this.visit(comparisons[i]);
+            this.addAttribute('operators', { operator });
+            result = {
+                type: 'BinaryExpression',
+                left: result,
+                operator,
+                right: comparisonValue
+            };
+        }
+
+        this.addAttribute('expressions', result);
+        return result;
+    }
+
     visitComparison(ctx) {
         const terms = ctx.term();
         if (terms.length === 0) return null;
 
         let result = this.visit(terms[0]);
-        this.addAttribute('expressions', { term: result });
 
-        if (ctx.getChildCount() > 1) {
+        if (terms.length > 1) {
             const operator = ctx.getChild(1).getText();
             const rightTerm = this.visit(terms[1]);
-
             this.addAttribute('operators', { operator });
-            this.addAttribute('expressions', { term: rightTerm });
-
             result = {
+                type: 'ComparisonExpression',
                 left: result,
                 operator,
                 right: rightTerm
@@ -163,28 +116,87 @@ class Loader extends biesGrammarVisitor {
         return result;
     }
 
-    // Visita una llamada a función
+    visitTerm(ctx) {
+        const factors = ctx.factor();
+        if (factors.length === 0) return null;
+
+        let result = this.visit(factors[0]);
+
+        for (let i = 1; i < factors.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const factorValue = this.visit(factors[i]);
+            result = {
+                type: 'TermExpression',
+                left: result,
+                operator,
+                right: factorValue
+            };
+        }
+
+        return result;
+    }
+
     visitFunctionCall(ctx) {
         const functionName = ctx.ID().getText();
-        const args = ctx.argumentList() ? ctx.argumentList().expression().map(expr => this.visit(expr)) : [];
-
-        const functionCallDetails = { type: 'FunctionCall', functionName, args };
-        this.addAttribute('functions', functionCallDetails);
+        let args = [];
         
+        if (ctx.argumentList()) {
+            args = ctx.argumentList().expression().map(expr => {
+                const arg = this.visit(expr);
+                return arg;
+            });
+        }
+
+        const functionCallDetails = {
+            type: 'FunctionCall',
+            functionName,
+            args
+        };
+        
+        this.addAttribute('expressions', functionCallDetails);
         return functionCallDetails;
     }
 
-    // Visita una declaración 'if'
-    visitIfStatement(ctx) {
-        const condition = this.visit(ctx.expression());
-        this.addAttribute('expressions', { type: 'IfStatement', condition });
+    visitFunctionDeclaration(ctx) {
+        const functionName = ctx.ID().getText();
+        const params = ctx.parameterList() 
+            ? ctx.parameterList().ID().map(param => param.getText())
+            : [];
 
-        this.visit(ctx.block(0)); // If block
-        if (ctx.ELSE()) {
-            this.visit(ctx.block(1)); // Else block
+        this.currentFunction = functionName;
+
+        if (!this.functionAttributes[this.currentFunction]) {
+            this.functionAttributes[this.currentFunction] = this.initializeAttributes();
         }
 
-        return null;
+        const functionDetails = {
+            type: 'FunctionDeclaration',
+            name: functionName,
+            params,
+            body: ctx.block().getText()
+        };
+        
+        this.addAttribute('statements', functionDetails);
+        this.visit(ctx.block());
+        this.currentFunction = this.globalContext;
+        
+        return functionDetails;
+    }
+
+    getFunctionAttributes() {
+        return this.functionAttributes;
+    }
+
+    getResults() {
+        for (const functionName in this.functionAttributes) {
+            const attributes = this.functionAttributes[functionName];
+            console.log(`Función: ${functionName}`);
+            console.log("Variables:", JSON.stringify(attributes.variables, null, 2));
+            console.log("Expresiones:", JSON.stringify(attributes.expressions, null, 2));
+            console.log("Operadores:", JSON.stringify(attributes.operators, null, 2));
+            console.log("Declaraciones:", JSON.stringify(attributes.statements, null, 2));
+            console.log("====================================");
+        }
     }
 }
 

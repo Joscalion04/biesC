@@ -38,15 +38,18 @@ function parseBIESCode(inputFile) {
    */
    const AST = parser.program();
 
-   // Crea un visitor (Loader) para recorrer el AST.
+   // Crea una instancia del Loader
    const loader = new Loader();
+
+   // Llama al método visit para recorrer el AST
    loader.visit(AST);
 
-   // Devuelve y muestra los resultados (diccionarios de atributos).
-   console.log("DICCIONARIOS DE ATRIBUTOS:");
-   console.log(JSON.stringify(loader.getAttributes(), null, 2)); // Ajusta el método si necesitas llamar a getAttributes() u otro método que devuelva los diccionarios
+   // Muestra los resultados procesados por el loader (atributos)
+   console.log("Atributos procesados por Loader:");
+   loader.getResults();  // Muestra el resultado final
 
-   return loader.getResults(); // También puedes devolver los resultados que desees
+   // Devuelve los resultados (por si los necesitas)
+  // return loader.getResults();
 }
 
 export default parseBIESCode;
