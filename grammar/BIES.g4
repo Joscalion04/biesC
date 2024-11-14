@@ -23,11 +23,11 @@ WS: [ \t\r\n]+ -> skip;
 // Rules
 program: (statement)* EOF;
 
-statement: functionDeclaration  // Prioridad a la declaración de funciones
-         | letInDeclaration     // Nuevo
+statement: functionDeclaration  
+         | letInDeclaration    
          | letDeclaration 
          | constDeclaration 
-         | printStatement       // Nuevo: print() como statement
+         | printStatement       
          | expressionStatement 
          | returnStatement
          | ifStatement
@@ -36,19 +36,19 @@ statement: functionDeclaration  // Prioridad a la declaración de funciones
 letDeclaration: 'let' ID '=' expression ';'? ;
 constDeclaration: 'const' ID '=' expression ';'? ;
 
-letInDeclaration: 'let' '{' (constDeclaration | letDeclaration)* '}' 'in' block ; // Manejo de let-in blocks
+letInDeclaration: 'let' '{' (constDeclaration | letDeclaration)* '}' 'in' block ;
 
 functionDeclaration: 'fun' ID '(' parameterList? ')' block;
 returnStatement: 'return' expression? ';'? ;
 expressionStatement: expression ';'? ;
 
-printStatement: PRINT '(' argumentList? ')' ';'? ; // Regla para manejar print()
+printStatement: PRINT '(' argumentList? ')' ';'? ;
 
 parameterList: ID (',' ID)*;
 
 expression: assignment (( '+' | '-' ) assignment)*;
 
-assignment: comparison ('=' comparison)* ; // Removido el bloque opcional con `*`
+assignment: comparison ('=' comparison)* ;
 
 comparison: term (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)?;
 
@@ -58,10 +58,11 @@ factor: INT
       | FLOAT
       | ID 
       | STRING 
-      | listAccess          // Nuevo
+      | listAccess          
       | '(' expression ')' 
-      | lambdaExpression    // Nuevo
+      | lambdaExpression    
       | functionCall
+      | printStatement       // Agrega printStatement como factor válido
       ;
 
 functionCall: ID '(' argumentList? ')';
@@ -71,6 +72,6 @@ block: '{' (statement)* '}';
 
 ifStatement: 'if' '(' expression ')' block (ELSE block)?;
 
-lambdaExpression: '(' parameterList? ')' '=>' (expression | block) ; // Manejo de funciones lambda
+lambdaExpression: '(' parameterList? ')' '=>' (block | expression) ; 
 
-listAccess: ID '[' expression ']' ; // Manejo de acceso a listas
+listAccess: ID '[' expression ']' ;

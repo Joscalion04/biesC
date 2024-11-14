@@ -23,7 +23,6 @@ class Loader extends biesGrammarVisitor {
         this.results.push(details);
     }
 
-    // Manejo de factores como valores literales, identificadores, expresiones anidadas, etc.
     visitFactor(ctx) {
         if (ctx.INT()) {
             return parseInt(ctx.INT().getText());
@@ -44,6 +43,22 @@ class Loader extends biesGrammarVisitor {
             return this.visit(ctx.functionCall());
         }
         return null;
+    }
+
+    visitLambdaExpression(ctx) {
+        const params = ctx.parameterList() 
+            ? ctx.parameterList().ID().map(param => param.getText()) 
+            : [];
+        const body = ctx.block() ? this.visit(ctx.block()) : this.visit(ctx.expression());
+
+        const lambdaDetails = {
+            type: 'LambdaExpression',
+            params,
+            body
+        };
+        this.addAttribute(lambdaDetails);
+
+        return lambdaDetails;
     }
 
     visitLetDeclaration(ctx) {
@@ -116,76 +131,32 @@ class Loader extends biesGrammarVisitor {
         return result;
     }
 
-    visitComparison(ctx) {
-        const terms = ctx.term();
-        if (terms.length === 0) return null;
-
-        let result = this.visit(terms[0]);
-
-        if (terms.length > 1) {
-            const operator = ctx.getChild(1).getText();
-            const rightTerm = this.visit(terms[1]);
-            const comparisonDetails = {
-                type: 'ComparisonExpression',
-                left: result,
-                operator,
-                right: rightTerm
-            };
-            this.addAttribute(comparisonDetails);
-            result = comparisonDetails;
-        }
-
-        return result;
-    }
-
-    visitTerm(ctx) {
-        const factors = ctx.factor();
-        if (factors.length === 0) return null;
-
-        let result = this.visit(factors[0]);
-
-        for (let i = 1; i < factors.length; i++) {
-            const operator = ctx.getChild(2 * i - 1).getText();
-            const factorValue = this.visit(factors[i]);
-            const termDetails = {
-                type: 'TermExpression',
-                left: result,
-                operator,
-                right: factorValue
-            };
-            this.addAttribute(termDetails);
-            result = termDetails;
-        }
-
-        return result;
-    }
-
     visitFunctionCall(ctx) {
         const functionName = ctx.ID().getText();
         let args = [];
-    
+
         if (ctx.argumentList()) {
             args = ctx.argumentList().expression().map(expr => {
                 return this.visit(expr);
             });
         }
-    
-        // Si la función llamada es una función lambda, se debe procesar correctamente
+
+        const functionCallDetails = {
+            type: 'FunctionCall',
+            functionName,
+            args
+        };
+
+        this.addAttribute(functionCallDetails);
+
         if (this.functionAttributes[functionName]) {
-            const functionCallDetails = {
-                type: 'FunctionCall',
-                functionName,
-                args
-            };
-    
-            this.addAttribute(functionCallDetails);
             return functionCallDetails;
         }
-    
+
+        // Lógica adicional para manejar llamadas a funciones lambda (si es necesario)
         return null;
     }
 
-    // Nuevo método para manejar el statement print
     visitPrintStatement(ctx) {
         const args = ctx.argumentList() 
             ? ctx.argumentList().expression().map(expr => this.visit(expr))
