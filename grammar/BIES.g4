@@ -12,7 +12,7 @@ ELSE: 'else';
 RETURN: 'return';
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 INT: [0-9]+;
-STRING: '"' .*? '"';
+STRING: '"' ( '\\' . | ~["\\] )* '"';
 COMMENT: '//' ~[\r\n]* -> skip;
 WS: [ \t\r\n]+ -> skip;
 

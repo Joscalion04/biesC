@@ -162,27 +162,42 @@ class Loader extends biesGrammarVisitor {
         const params = ctx.parameterList() 
             ? ctx.parameterList().ID().map(param => param.getText())
             : [];
-
-        this.currentFunction = functionName;
-
-        if (!this.functionAttributes[this.currentFunction]) {
-            this.functionAttributes[this.currentFunction] = this.initializeAttributes();
-        }
-
+    
+        // Crea el detalle de la declaración de función
         const functionDetails = {
             type: 'FunctionDeclaration',
             name: functionName,
             params,
             body: ctx.block().getText()
         };
-        
-        this.addAttribute('statements', functionDetails);
+    
+        // Verifica si estamos en el contexto global o dentro de otra función
+        if (this.currentFunction === this.globalContext) {
+            // Si estamos en el contexto global, agrega la función al contexto main
+            this.functionAttributes[this.globalContext].statements.push(functionDetails);
+        } else {
+            // Si estamos dentro de otra función, agrega la declaración al contexto actual
+            this.functionAttributes[this.currentFunction].statements.push(functionDetails);
+        }
+    
+        // Cambia temporalmente el contexto para el procesamiento de la función
+        const previousFunction = this.currentFunction;
+        this.currentFunction = functionName;
+    
+        // Inicializa los atributos de la nueva función si no existen
+        if (!this.functionAttributes[this.currentFunction]) {
+            this.functionAttributes[this.currentFunction] = this.initializeAttributes();
+        }
+    
+        // Procesa el cuerpo de la función
         this.visit(ctx.block());
-        this.currentFunction = this.globalContext;
-        
+    
+        // Restaura el contexto anterior
+        this.currentFunction = previousFunction;
+    
         return functionDetails;
     }
-
+    
     getFunctionAttributes() {
         return this.functionAttributes;
     }
