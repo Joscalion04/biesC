@@ -12,19 +12,15 @@ class Loader extends biesGrammarVisitor {
 
     initializeAttributes() {
         return {
-            variables: [],
-            expressions: [],
-            operators: [],
-            statements: []
+            secuencia: []
         };
     }
 
-    addAttribute(type, details) {
+    addAttribute(details) {
         if (this.currentFunction && this.functionAttributes[this.currentFunction]) {
-            this.functionAttributes[this.currentFunction][type].push(details);
+            this.functionAttributes[this.currentFunction].secuencia.push(details);
         }
-        const result = `${type}: ${JSON.stringify(details)}`;
-        this.results.push(result);
+        this.results.push(details);
     }
 
     // Factor principal que maneja valores literales
@@ -50,26 +46,26 @@ class Loader extends biesGrammarVisitor {
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
         const value = this.visit(ctx.expression());
-        
+
         const letDetails = {
             type: 'LetDeclaration',
             id,
             value: value
         };
-        this.addAttribute('variables', letDetails);
+        this.addAttribute(letDetails);
         return letDetails;
     }
 
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
         const value = this.visit(ctx.expression());
-        
+
         const constDetails = {
             type: 'ConstDeclaration',
             id,
             value: value
         };
-        this.addAttribute('variables', constDetails);
+        this.addAttribute(constDetails);
         return constDetails;
     }
 
@@ -82,16 +78,16 @@ class Loader extends biesGrammarVisitor {
         for (let i = 1; i < comparisons.length; i++) {
             const operator = ctx.getChild(2 * i - 1).getText();
             const comparisonValue = this.visit(comparisons[i]);
-            this.addAttribute('operators', { operator });
-            result = {
+            const expressionDetails = {
                 type: 'BinaryExpression',
                 left: result,
                 operator,
                 right: comparisonValue
             };
+            this.addAttribute(expressionDetails);
+            result = expressionDetails;
         }
 
-        this.addAttribute('expressions', result);
         return result;
     }
 
@@ -104,13 +100,14 @@ class Loader extends biesGrammarVisitor {
         if (terms.length > 1) {
             const operator = ctx.getChild(1).getText();
             const rightTerm = this.visit(terms[1]);
-            this.addAttribute('operators', { operator });
-            result = {
+            const comparisonDetails = {
                 type: 'ComparisonExpression',
                 left: result,
                 operator,
                 right: rightTerm
             };
+            this.addAttribute(comparisonDetails);
+            result = comparisonDetails;
         }
 
         return result;
@@ -125,12 +122,14 @@ class Loader extends biesGrammarVisitor {
         for (let i = 1; i < factors.length; i++) {
             const operator = ctx.getChild(2 * i - 1).getText();
             const factorValue = this.visit(factors[i]);
-            result = {
+            const termDetails = {
                 type: 'TermExpression',
                 left: result,
                 operator,
                 right: factorValue
             };
+            this.addAttribute(termDetails);
+            result = termDetails;
         }
 
         return result;
@@ -139,11 +138,10 @@ class Loader extends biesGrammarVisitor {
     visitFunctionCall(ctx) {
         const functionName = ctx.ID().getText();
         let args = [];
-        
+
         if (ctx.argumentList()) {
             args = ctx.argumentList().expression().map(expr => {
-                const arg = this.visit(expr);
-                return arg;
+                return this.visit(expr);
             });
         }
 
@@ -152,8 +150,8 @@ class Loader extends biesGrammarVisitor {
             functionName,
             args
         };
-        
-        this.addAttribute('expressions', functionCallDetails);
+
+        this.addAttribute(functionCallDetails);
         return functionCallDetails;
     }
 
@@ -162,42 +160,49 @@ class Loader extends biesGrammarVisitor {
         const params = ctx.parameterList() 
             ? ctx.parameterList().ID().map(param => param.getText())
             : [];
-    
-        // Crea el detalle de la declaración de función
+
         const functionDetails = {
             type: 'FunctionDeclaration',
             name: functionName,
-            params,
-            body: ctx.block().getText()
+            params
         };
-    
-        // Verifica si estamos en el contexto global o dentro de otra función
-        if (this.currentFunction === this.globalContext) {
-            // Si estamos en el contexto global, agrega la función al contexto main
-            this.functionAttributes[this.globalContext].statements.push(functionDetails);
-        } else {
-            // Si estamos dentro de otra función, agrega la declaración al contexto actual
-            this.functionAttributes[this.currentFunction].statements.push(functionDetails);
-        }
-    
-        // Cambia temporalmente el contexto para el procesamiento de la función
+
+        this.addAttribute(functionDetails);
+
         const previousFunction = this.currentFunction;
         this.currentFunction = functionName;
-    
-        // Inicializa los atributos de la nueva función si no existen
+
         if (!this.functionAttributes[this.currentFunction]) {
             this.functionAttributes[this.currentFunction] = this.initializeAttributes();
         }
-    
-        // Procesa el cuerpo de la función
+
         this.visit(ctx.block());
-    
-        // Restaura el contexto anterior
+
         this.currentFunction = previousFunction;
-    
+
         return functionDetails;
     }
-    
+
+    visitIfStatement(ctx) {
+        const condition = this.visit(ctx.expression());
+        const ifDetails = {
+            type: 'IfStatement',
+            condition
+        };
+
+        this.addAttribute(ifDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        if (ctx.elseBlock) {
+            this.visit(ctx.elseBlock());
+        }
+
+        return ifDetails;
+    }
+
     getFunctionAttributes() {
         return this.functionAttributes;
     }
@@ -206,10 +211,7 @@ class Loader extends biesGrammarVisitor {
         for (const functionName in this.functionAttributes) {
             const attributes = this.functionAttributes[functionName];
             console.log(`Función: ${functionName}`);
-            console.log("Variables:", JSON.stringify(attributes.variables, null, 2));
-            console.log("Expresiones:", JSON.stringify(attributes.expressions, null, 2));
-            console.log("Operadores:", JSON.stringify(attributes.operators, null, 2));
-            console.log("Declaraciones:", JSON.stringify(attributes.statements, null, 2));
+            console.log("Secuencia:", JSON.stringify(attributes.secuencia, null, 2));
             console.log("====================================");
         }
     }
