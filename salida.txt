@@ -1,24 +1,6 @@
-Factor (ID): , {"id":"x"}
-Term: , {"factor":"x"}
-Comparison: , {"term":"x"}
-Factor (ID): , {"id":"y"}
-Term: , {"factor":"y"}
-Operator: , {"operator":">"}
-RightTerm: , {"term":"y"}
-Expression: , {"comparison":{"left":"x","operator":">","right":"y"}}
-Factor (ID): , {"id":"x"}
-Term: , {"factor":"x"}
-Comparison: , {"term":"x"}
-Factor (INT): , {"value":10}
-Term: , {"factor":10}
-Operator: , {"operator":"=="}
-RightTerm: , {"term":10}
-Expression: , {"comparison":{"left":"x","operator":"==","right":10}}
-Factor (ID): , {"id":"x"}
-Term: , {"factor":"x"}
-Comparison: , {"term":"x"}
-Factor (ID): , {"id":"y"}
-Term: , {"factor":"y"}
-Operator: , {"operator":"!="}
-RightTerm: , {"term":"y"}
-Expression: , {"comparison":{"left":"x","operator":"!=","right":"y"}}
+operators: {"operator":"+"}
+expressions: {"type":"BinaryExpression","left":"x","operator":"+","right":"y"}
+expressions: {"type":"TermExpression","left":10,"operator":"*","right":2}
+operators: {"operator":"+"}
+operators: {"operator":"-"}
+expressions: {"type":"BinaryExpression","left":{"type":"BinaryExpression","left":"x","operator":"+","right":"y"},"operator":"-","right":5}

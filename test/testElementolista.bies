@@ -1,0 +1,5 @@
+let {const a = [1, 2, 3, "Hello World!", 5, 6, 7]
+	} in {
+	print("*** Testing List Access ("+ a + ") ***")
+	print(a[ a[0] + 2 ])
+}

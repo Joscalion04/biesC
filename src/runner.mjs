@@ -49,7 +49,7 @@ function parseBIESCode(inputFile) {
    loader.getResults();  // Muestra el resultado final
 
    // Devuelve los resultados (por si los necesitas)
-  // return loader.getResults();
+  return loader.getResultsCommander();
 }
 
 export default parseBIESCode;

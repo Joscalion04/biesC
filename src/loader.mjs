@@ -198,6 +198,10 @@ class Loader extends biesGrammarVisitor {
             console.log("====================================");
         }
     }
+
+    getResultsCommander() {
+        return this.results;
+    }
 }
 
 export default Loader;
