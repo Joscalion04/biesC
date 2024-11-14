@@ -102,5 +102,11 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
+	// Visit a parse tree produced by biesParser#letInExpression.
+	visitLetInExpression(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 
 }

@@ -10,6 +10,8 @@ FALSE: 'false';
 IF: 'if';
 ELSE: 'else';
 RETURN: 'return';
+IN: 'in';
+THEN: 'then';
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 INT: [0-9]+;
 STRING: '"' ( '\\' . | ~["\\] )* '"';
@@ -19,7 +21,8 @@ WS: [ \t\r\n]+ -> skip;
 // Rules
 program: (statement)* EOF;
 
-statement: functionDeclaration  // Prioridad a la declaración de funciones
+statement: functionDeclaration   
+         | letInExpression
          | letDeclaration 
          | constDeclaration 
          | expressionStatement 
@@ -27,19 +30,20 @@ statement: functionDeclaration  // Prioridad a la declaración de funciones
          | ifStatement
          ;
 
-letDeclaration: 'let' ID '=' expression ';'? ;
-constDeclaration: 'const' ID '=' expression ';'? ;
-functionDeclaration: 'fun' ID '(' parameterList? ')' block;
-returnStatement: 'return' expression? ';'? ;
+letDeclaration: LET ID '=' expression ';'? ;
+constDeclaration: CONST ID '=' expression ';'? ;
+functionDeclaration: FUN ID '(' parameterList? ')' block;
+returnStatement: RETURN expression? ';'? ;
 expressionStatement: expression ';'? ;
 
 parameterList: ID (',' ID)*;
 
-expression: comparison (( '+' | '-' ) comparison)*;
+// Operadores y expresiones
+expression: comparison (( '+' | '-' ) comparison)* ;
 
-comparison: term (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)?;
+comparison: term (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)* ;
 
-term: factor (( '*' | '/' ) factor)*;
+term: factor (( '*' | '/' | '**' ) factor)* ;
 
 factor: INT 
       | ID 
@@ -51,6 +55,11 @@ factor: INT
 functionCall: ID '(' argumentList? ')';
 argumentList: expression (',' expression)*;
 
-block: '{' (statement)* '}';
+// Bloque de código
+block: '{' (statement)* '}' ;
 
-ifStatement: 'if' '(' expression ')' block (ELSE block)?;
+// Expresión condicional
+ifStatement: IF '(' expression ')' THEN block (ELSE block)? ;
+
+// Expresión let-in para anidar variables y funciones
+letInExpression: LET '{' (letDeclaration | constDeclaration | functionDeclaration)* '}' IN block ;

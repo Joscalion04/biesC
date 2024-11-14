@@ -1,6 +1,29 @@
-operators: {"operator":"+"}
-expressions: {"type":"BinaryExpression","left":"x","operator":"+","right":"y"}
-expressions: {"type":"TermExpression","left":10,"operator":"*","right":2}
-operators: {"operator":"+"}
-operators: {"operator":"-"}
-expressions: {"type":"BinaryExpression","left":{"type":"BinaryExpression","left":"x","operator":"+","right":"y"},"operator":"-","right":5}
+{
+  "type": "BinaryExpression",
+  "left": "x",
+  "operator": "+",
+  "right": "y"
+}
+{
+  "type": "TermExpression",
+  "left": 10,
+  "operator": "*",
+  "right": 2
+}
+{
+  "type": "BinaryExpression",
+  "left": "x",
+  "operator": "+",
+  "right": "y"
+}
+{
+  "type": "BinaryExpression",
+  "left": {
+    "type": "BinaryExpression",
+    "left": "x",
+    "operator": "+",
+    "right": "y"
+  },
+  "operator": "-",
+  "right": 5
+}

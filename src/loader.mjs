@@ -1,4 +1,5 @@
 import biesGrammarVisitor from '../parser/biesVisitor.js';
+import biesGrammarParser from '../parser/biesParser.js';
 
 class Loader extends biesGrammarVisitor {
     constructor() {
@@ -23,13 +24,12 @@ class Loader extends biesGrammarVisitor {
         this.results.push(details);
     }
 
-    // Factor principal que maneja valores literales
     visitFactor(ctx) {
         if (ctx.INT()) {
             return parseInt(ctx.INT().getText());
         }
         if (ctx.STRING()) {
-            return ctx.STRING().getText().slice(1, -1); // Elimina las comillas
+            return ctx.STRING().getText().slice(1, -1);
         }
         if (ctx.ID()) {
             return ctx.ID().getText();
@@ -43,6 +43,16 @@ class Loader extends biesGrammarVisitor {
         return null;
     }
 
+    visitReturnStatement(ctx) {
+        const returnValue = ctx.expression() ? this.visit(ctx.expression()) : null;
+        const returnDetails = {
+            type: 'ReturnStatement',
+            value: returnValue
+        };
+        this.addAttribute(returnDetails);
+        return returnDetails;
+    }
+
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
         const value = this.visit(ctx.expression());
@@ -50,7 +60,7 @@ class Loader extends biesGrammarVisitor {
         const letDetails = {
             type: 'LetDeclaration',
             id,
-            value: value
+            value
         };
         this.addAttribute(letDetails);
         return letDetails;
@@ -63,7 +73,7 @@ class Loader extends biesGrammarVisitor {
         const constDetails = {
             type: 'ConstDeclaration',
             id,
-            value: value
+            value
         };
         this.addAttribute(constDetails);
         return constDetails;
@@ -72,22 +82,31 @@ class Loader extends biesGrammarVisitor {
     visitExpression(ctx) {
         const comparisons = ctx.comparison();
         if (comparisons.length === 0) return null;
-
+    
         let result = this.visit(comparisons[0]);
-
+    
         for (let i = 1; i < comparisons.length; i++) {
             const operator = ctx.getChild(2 * i - 1).getText();
             const comparisonValue = this.visit(comparisons[i]);
-            const expressionDetails = {
-                type: 'BinaryExpression',
-                left: result,
-                operator,
-                right: comparisonValue
-            };
-            this.addAttribute(expressionDetails);
-            result = expressionDetails;
+    
+            if (operator === '+') {
+                if (typeof result === 'string' || typeof comparisonValue === 'string') {
+                    result = `${result}${comparisonValue}`;
+                } else {
+                    result += comparisonValue;
+                }
+            } else {
+                const expressionDetails = {
+                    type: 'BinaryExpression',
+                    left: result,
+                    operator,
+                    right: comparisonValue
+                };
+                this.addAttribute(expressionDetails);
+                result = expressionDetails;
+            }
         }
-
+    
         return result;
     }
 
@@ -140,9 +159,7 @@ class Loader extends biesGrammarVisitor {
         let args = [];
 
         if (ctx.argumentList()) {
-            args = ctx.argumentList().expression().map(expr => {
-                return this.visit(expr);
-            });
+            args = ctx.argumentList().expression().map(expr => this.visit(expr));
         }
 
         const functionCallDetails = {
@@ -185,24 +202,84 @@ class Loader extends biesGrammarVisitor {
 
     visitIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
+        const thenBlock = this.visit(ctx.block(0));
+        const elseBlock = ctx.block(1) ? this.visit(ctx.block(1)) : null;
+    
         const ifDetails = {
             type: 'IfStatement',
-            condition
+            condition,
+            thenBlock,
+            elseBlock,
         };
-
+    
         this.addAttribute(ifDetails);
-
-        if (ctx.block()) {
-            this.visit(ctx.block());
-        }
-
-        if (ctx.elseBlock) {
-            this.visit(ctx.elseBlock());
-        }
 
         return ifDetails;
     }
-
+    visitLetInExpression(ctx) {
+        // Asegúrate de que el contexto tiene suficientes hijos
+        if (ctx.getChildCount() < 2) {
+            console.error("El contexto no tiene suficientes hijos.");
+            return null;
+        }
+    
+        // Verifica el contenido de los hijos para depuración
+        console.log("Contexto de Let-In:", ctx.getText());
+    
+        const child1 = ctx.getChild(1);
+        if (!child1) {
+            console.error("El hijo 1 no está presente.");
+            return null;
+        }
+    
+        console.log("Hijo 1:", child1.getText());
+    
+        // Asegurarse de que el hijo tiene la propiedad 'children' antes de intentar acceder a ella
+        if (!child1.children) {
+            console.error("El hijo 1 no tiene 'children'.");
+            return null;
+        }
+    
+        // Filtrar las declaraciones de let, const y funciones
+        const letDeclarations = child1.children.filter(child => 
+            child instanceof biesGrammarParser.LetDeclarationContext || 
+            child instanceof biesGrammarParser.ConstDeclarationContext || 
+            child instanceof biesGrammarParser.FunctionDeclarationContext
+        );
+    
+        const letInDetails = {
+            type: 'LetInExpression',
+            declarations: [],
+            body: null
+        };
+    
+        // Procesar las declaraciones
+        for (const declaration of letDeclarations) {
+            let declarationDetails;
+            if (declaration instanceof biesGrammarParser.LetDeclarationContext) {
+                declarationDetails = this.visitLetDeclaration(declaration);
+            } else if (declaration instanceof biesGrammarParser.ConstDeclarationContext) {
+                declarationDetails = this.visitConstDeclaration(declaration);
+            } else if (declaration instanceof biesGrammarParser.FunctionDeclarationContext) {
+                declarationDetails = this.visitFunctionDeclaration(declaration);
+            }
+            letInDetails.declarations.push(declarationDetails);
+        }
+    
+        // Verificar y procesar el bloque de cuerpo
+        const bodyIndex = ctx.getChildCount() - 1;
+        const body = ctx.getChild(bodyIndex);
+        if (body && body instanceof biesGrammarParser.BlockContext) {
+            letInDetails.body = this.visit(body);
+        } else {
+            console.error("Cuerpo no encontrado o no válido en Let-In.");
+        }
+    
+        this.addAttribute(letInDetails);
+    
+        return letInDetails;
+    }
+    
     getFunctionAttributes() {
         return this.functionAttributes;
     }

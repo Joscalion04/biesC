@@ -50,19 +50,15 @@ console.log(`Archivo de salida (sysout): ${outFile}`);
 console.log(`Archivo de errores (syserr): ${errFile}`);
 console.log(`Nivel de trace: ${traceLevel}`);
 
-// Ejecutar el parser con trace y redirigir las salidas
 try {
-    const result = runParser(filePath);
-    if (result === undefined) {
-        throw new Error("El parser no devolvió ningún resultado.");
-    }
+    // Ejecutar el parser y obtener el resultado
+    const result = runParser(filePath); // Asegúrate de que runParser devuelva un resultado adecuado
 
-    // Mostrar el resultado en la consola
-    result.forEach(line => console.log(line));
-
-    // Escritura en el archivo de salida
-    const resultString = result.join('\n');
-    if (resultString !== undefined) {
+    // Verificar que el resultado no sea undefined
+    if (result !== undefined) {
+        const resultString = result.map(line => JSON.stringify(line, null, 2)).join('\n');
+        
+        // Escritura en el archivo de salida
         try {
             fs.writeFileSync(outFile, resultString);
             console.log(`Ejecución completada con éxito. Salida en: ${outFile}`);
