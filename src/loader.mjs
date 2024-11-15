@@ -94,48 +94,62 @@ class Loader extends biesGrammarVisitor {
     */
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
-        
-        // Guardamos el valor original de processingLambda
+    
+        // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
+    
+        // Visitamos la expresión asociada al `let` para obtener su valor
         const value = this.visit(ctx.expression());
+    
+        // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
-
-        // Si el valor es una lambda
+    
+        // Si el valor es una LambdaExpression
         if (value && value.type === 'LambdaExpression') {
-            // Registrar la lambda como una función
+            // Inicializar atributos de la función lambda
             this.functionAttributes[id] = this.initializeAttributes();
-            
-            // Crear los detalles de la función
+    
+            // Detalles de la función
             const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: id,
                 params: value.params
             };
-
-            // Añadir la declaración de función al contexto global
+    
+            // Registrar la función en el contexto global
             const prevFunction = this.currentFunction;
             this.currentFunction = id;
             this.addAttribute(functionDetails);
-
-            // Añadir el cuerpo de la lambda
-            if (value.body && value.body.type === 'PrintStatement') {
-                this.functionAttributes[id].secuencia.push(value.body);
+    
+            // Agregar el cuerpo de la lambda al contexto de la función
+            if (value.body) {
+                if (Array.isArray(value.body)) {
+                    // Si el cuerpo es un bloque de sentencias
+                    this.functionAttributes[id].secuencia.push(...value.body);
+                } else {
+                    // Si el cuerpo es una única declaración, como PrintStatement o BinaryExpression
+                    this.functionAttributes[id].secuencia.push(value.body);
+                }
             }
-
-            // Restaurar el contexto
+    
+            // Restaurar el contexto anterior
             this.currentFunction = prevFunction;
         }
-
+    
+        // Detalles del LetDeclaration
         const letDetails = {
             type: 'LetDeclaration',
             id,
             value
         };
-
+    
+        // Agregar la declaración `let` al contexto actual
         this.addAttribute(letDetails);
+    
         return letDetails;
     }
+    
 
     /** 
     * Procesa una expresión de tipo `Lambda`, extrayendo sus parámetros y cuerpo. 

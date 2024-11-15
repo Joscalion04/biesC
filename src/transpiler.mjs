@@ -61,11 +61,15 @@ class Transpiler {
                     this.transpileIfStatement(attributes[i]);
                 } else if (attributes[i].type === 'PrintStatement') {
                     this.transpilePrintStatement(attributes[i]); // Manejo de PrintStatement
+                }else if (attributes[i].type === 'ExpressionStatement') {
+                    this.transpileExpressionStatement(attributes[i]); // Manejo de ExpressionStatement
+                }else if (attributes[i].type === 'BinaryExpression') {
+                    this.transpileExpression(attributes[i]); // Manejo de BinaryExpression
                 }
 
-                // if (attributes[i].type === 'FunctionDeclaration') {
-                //     this.transpileFunctionDeclaration(attributes[i], bindingIndex);
-                // }
+               // if (attributes[i].type === 'FunctionDeclaration') {
+               //      this.transpileFunctionDeclaration(attributes[i], bindingIndex);
+               //  }
             }
 
             if (functionName === 'main') {
@@ -223,7 +227,19 @@ class Transpiler {
         this.loadValue(node.name);
         this.instructions.push(`BLD 0 ${bindingIndex}`);
     }
-
+ /**
+    * Manejo de ExpressionStatement
+    * Este método evalúa la expresión contenida dentro de un ExpressionStatement.
+    * 
+    * @method transpileExpressionStatement
+    * @param {Object} node El nodo que representa un ExpressionStatement.
+    */
+ transpileExpressionStatement(node) {
+    // Procesa la expresión contenida en el nodo
+    if (node.expression) {
+        this.transpileExpression(node.expression);
+    }
+}
     /** 
     * Transforma una expresión en instrucciones correspondientes.
     * 
@@ -237,8 +253,8 @@ class Transpiler {
     transpileExpression(node) {
         if (node.left && node.right) {
             this.loadValue(node.left);
-            this.instructions.push(`OPR ${node.operator}`);
             this.loadValue(node.right);
+            this.loadBinaryOperator(node.operator);
         } else {
             // Para valores literales o variables
             this.instructions.push(`LDV ${node.value}`);
