@@ -25,7 +25,7 @@ class Transpiler {
                     this.transpileValueDeclaration(attributes[i], bindingIndex);
                     bindingIndex++;
                 } else if (attributes[i].type === 'FunctionCall') {
-                    // this.transpileFunctionCall(attributes[i]);
+                     this.transpileFunctionCall(attributes[i],  functionAttributes[functionName].id);
                 } else if (attributes[i].type === 'ComparisionExpression') {
                     this.transpileComparisionExpression(attributes[i]);
                 } else if (attributes[i].type === 'IfStatement') {
@@ -54,7 +54,9 @@ class Transpiler {
         } else if (typeof value === 'string') {
             this.instructions.push(`LDV "${value}"`);
         } else if (typeof value === 'object') {
-            this.instructions.push(`LDV ${value.functionName}`);
+            this.instructions.push(`LDV ${value.body.args[0]}`);
+           
+           
         }
     }
 
@@ -121,8 +123,16 @@ class Transpiler {
 
     // Genera las instrucciones para una declaración let
     transpileValueDeclaration(node, bindingIndex) {
-        this.loadValue(node.value);
-        this.instructions.push(`BLD 0 ${bindingIndex}`);
+        
+        if (node.value.type === 'LambdaExpression') {
+            // Manejo especial para LambdaExpression
+            //this.instructions.push(`LDF $${node.id}`); // Cargar la función lambda
+           // this.instructions.push(`BLD 0 ${bindingIndex}`); // Asociar al binding index
+        } else {
+            this.loadValue(node.value); // Manejar el valor normalmente
+            this.instructions.push(`BLD 0 ${bindingIndex}`);
+        }
+        
     }
 
     // Genera las instrucciones para una declaración de función
@@ -144,7 +154,7 @@ class Transpiler {
     }
 
     // Transpila una llamada a función
-    transpileFunctionCall(node) {
+    transpileFunctionCall(node,functionName) {
         console.log('=============================================');
         console.log(node);
         console.log('Argumentos: ', node.args);
@@ -172,9 +182,11 @@ class Transpiler {
                 console.log('Argumento desconocido:', arg);
             }
         });
+        
 
-        this.instructions.push(`LDF $${node.functionName}`);
-        this.instructions.push(`APP $${node.functionName} ${node.args.length} ; ${node.functionName}(${node.args.join(', ')})`);
+        this.instructions.push(`LDF $${functionName}`);
+        //this.instructions.push(`APP $${node.functionName} ${node.args.length} ; ${node.functionName}(${node.args.join(', ')})`);
+        this.instructions.push(`APP  ${node.args.length}  ; ${node.functionName}(${node.args.join(', ')})`);
     }
 
 
