@@ -53,57 +53,49 @@ class Loader extends biesGrammarVisitor {
 
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
-        
-        // Guardamos el valor original de processingLambda
-        const wasProcessingLambda = this.processingLambda;
-        this.processingLambda = true;
         const value = this.visit(ctx.expression());
-        this.processingLambda = wasProcessingLambda;
-
-        // Si el valor es una lambda
+    
+        // Si el valor es una expresión lambda, la tratamos como una función
         if (value && value.type === 'LambdaExpression') {
-            // Registrar la lambda como una función
-            this.functionAttributes[id] = this.initializeAttributes();
-            
-            // Crear los detalles de la función
-            const functionDetails = {
+            // Registrar la lambda como una función con sus parámetros y cuerpo
+            const lambdaFunction = {
                 type: 'FunctionDeclaration',
                 name: id,
-                params: value.params
+                params: value.params,
+                body: value.body
             };
-
-            // Añadir la declaración de función al contexto global
-            const prevFunction = this.currentFunction;
-            this.currentFunction = id;
-            this.addAttribute(functionDetails);
-
-            // Añadir el cuerpo de la lambda
-            if (value.body && value.body.type === 'PrintStatement') {
-                this.functionAttributes[id].secuencia.push(value.body);
-            }
-
-            // Restaurar el contexto
-            this.currentFunction = prevFunction;
+    
+            // Registrar la función en el contexto actual
+            this.addAttribute(lambdaFunction);
+    
+            // Opcional: Registrar también la declaración `let` si es necesario
+            const letDetails = {
+                type: 'LetDeclaration',
+                id,
+                value: `Function ${id}` // Indicar que esta `let` apunta a una función
+            };
+            this.addAttribute(letDetails);
+    
+            // Retornar o manejar la función según sea necesario
+            return lambdaFunction;
         }
-
+    
+        // Si no es una lambda, procesarlo como una declaración `let` normal
         const letDetails = {
             type: 'LetDeclaration',
             id,
             value
         };
-
         this.addAttribute(letDetails);
         return letDetails;
     }
-    
 
     visitLambdaExpression(ctx) {
-        const params = ctx.parameterList() 
-            ? ctx.parameterList().ID().map(param => param.getText()) 
+        const params = ctx.parameterList()
+            ? ctx.parameterList().ID().map(param => param.getText())
             : [];
 
         let body;
-        
         if (ctx.block()) {
             body = ctx.block().statement().map(stmt => this.visit(stmt));
         } else if (ctx.expression()) {
@@ -116,7 +108,6 @@ class Loader extends biesGrammarVisitor {
             body
         };
     }
-    
 
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
@@ -265,7 +256,40 @@ class Loader extends biesGrammarVisitor {
         return this.functionAttributes;
     }
 
+    transformLetDeclarationsWithLambdas() {
+        console.log("Transformando LetDeclarations con Lambdas...");
+      
+        // Recorremos las funciones en el diccionario de funciones
+        for (const functionName in this.functionAttributes) {
+            const attributes = this.functionAttributes[functionName];
+            const secuencia = attributes.secuencia;
+    
+            // Recorremos la secuencia de la función principal
+            for (let i = 0; i < secuencia.length; i++) {
+                const attr = secuencia[i];
+    
+                // Buscamos las LetDeclarations con LambdaExpressions
+                if (attr.type === 'LetDeclaration' && attr.value && Array.isArray(attr.value) && attr.value[0][0]?.type === 'LambdaExpression') {
+                    const lambdaExpression = attr.value[0][0]; // La LambdaExpression
+                    
+                    // La secuencia de la función será el cuerpo de la lambda
+                    const functionBody = lambdaExpression.body; // El cuerpo de la lambda (puede ser un bloque o expresión)
+    
+                    // Establecemos el cuerpo de la función en la secuencia
+                    secuencia.splice(i, 1, ...functionBody); // Reemplazamos la LetDeclaration con el cuerpo de la lambda
+    
+                    // Si no existe un contexto para la función, lo creamos
+                    if (!this.functionAttributes[attr.id]) {
+                        this.functionAttributes[attr.id] = this.initializeAttributes();
+                        this.functionAttributes[attr.id].secuencia = functionBody; // Guardamos el cuerpo como una propiedad de la función
+                    }
+                }
+            }
+        }
+    }
+
     getResults() {
+        this.transformLetDeclarationsWithLambdas();
         for (const functionName in this.functionAttributes) {
             const attributes = this.functionAttributes[functionName];
             console.log(`Función: ${functionName}`);

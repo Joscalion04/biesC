@@ -1,3 +1,8 @@
-fun add(x, b){
-    return x + b
+let splash = (msg) => print(msg)
+let version = 666- 664
+splash("Testing helloworld Version " + version + "***")
+print("Hello World!")
+
+fun add(a, b){
+    let x = a + b;
 }
