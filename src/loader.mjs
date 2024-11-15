@@ -237,7 +237,11 @@ class Loader extends biesGrammarVisitor {
                 operator,
                 right: assignmentValue
             };
+            // Solo añadimos el print al contexto actual si no estamos dentro de una lambda
+             if (!this.processingLambda) {
             this.addAttribute(expressionDetails);
+                 }
+            
             result = expressionDetails;
         }
 
