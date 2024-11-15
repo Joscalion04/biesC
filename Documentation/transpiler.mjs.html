@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: transpiler.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: transpiler.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// transpiler.js
+
+
+/**
+* Clase Transpiler que se encarga de transpilar el código de alto nivel a código de bajo nivel
+* y generar las instrucciones necesarias para la máquina virtual.
+* 
+* @author Manuel Mora Sandi 
+* @author Derek Rojas Mendoza
+* @author Josué Vindas Pérez
+* @author Joseph León Cabezas
+*/
+class Transpiler {
+    /**
+    * Constructor de la clase Transpiler que se encarga de inicializar las instrucciones
+    * @constructor
+    * @param {string} instructions - Instrucciones a transpilar 
+    */
+    constructor() {
+        this.instructions = [];
+    }
+
+    /** 
+    * Transpila los atributos de las funciones proporcionadas, generando las instrucciones correspondientes
+    * para cada tipo de declaración en la secuencia de la función.
+    * 
+    * Este método recorre cada función y procesa sus atributos, transformando declaraciones como `LetDeclaration`, 
+    * `ConstDeclaration`, `FunctionCall`, `ComparisionExpression`, y `IfStatement` en instrucciones que se almacenan 
+    * en el array `instructions`. También maneja el caso especial para la función `main`, añadiendo una instrucción de 
+    * detención (`HLT`) al final de sus instrucciones.
+    * 
+    * @method transpile
+    * 
+    * @param {Object} functionAttributes Un objeto que contiene los atributos de las funciones, donde cada función
+    *                                    tiene un conjunto de instrucciones que deben ser procesadas.
+    */
+    transpile(functionAttributes) {
+
+        for (const functionName in functionAttributes) {
+
+            let bindingIndex = 0;
+
+            this.instructions.push('=================================');
+            this.instructions.push(`$FUN $${functionAttributes[functionName].id}                ; ${functionName}`);
+
+            const attributes = functionAttributes[functionName].secuencia;
+            // console.log('Atributo: ', attributes[11].args);
+
+            for (let i = 0; i &lt; attributes.length; i++) {
+
+                console.log('Atributo: ', attributes[i]);
+
+                if (attributes[i].type === 'LetDeclaration' || attributes[i].type === 'ConstDeclaration') {
+                    this.transpileValueDeclaration(attributes[i], bindingIndex);
+                    bindingIndex++;
+                } else if (attributes[i].type === 'FunctionCall') {
+                    // this.transpileFunctionCall(attributes[i]);
+                } else if (attributes[i].type === 'ComparisionExpression') {
+                    this.transpileComparisionExpression(attributes[i]);
+                } else if (attributes[i].type === 'IfStatement') {
+                    this.transpileIfStatement(attributes[i]);
+                }
+
+                // if (attributes[i].type === 'FunctionDeclaration') {
+                //     this.transpileFunctionDeclaration(attributes[i], bindingIndex);
+                // }
+            }
+
+            if (functionName === 'main') {
+                this.instructions.push('HLT');
+            }
+
+            this.instructions.push('$END');
+        }
+        console.log('Instrucciones: ', this.instructions);
+    }
+
+    /** 
+    * Carga un valor en las instrucciones según su tipo.
+    * 
+    * Dependiendo del tipo del valor proporcionado (`number`, `string`, o `object`), este método genera una instrucción
+    * correspondiente para cargar el valor en las instrucciones. Si el valor es un número, se genera una instrucción de carga
+    * con el valor numérico. Si es una cadena de texto, se genera una instrucción con la cadena entre comillas.
+    * 
+    * @method loadValue
+    * 
+    * @param {(number|string|object)} value El valor que se va a cargar. Puede ser un número, una cadena de texto,
+    *                                      o un objeto con una propiedad `functionName`.
+    */
+    loadValue(value) {
+        if (typeof value === 'number') {
+            this.instructions.push(`LDV ${value}`);
+        } else if (typeof value === 'string') {
+            this.instructions.push(`LDV "${value}"`);
+        } else if (typeof value === 'object') {
+            this.instructions.push(`LDV ${value.functionName}`);
+        }
+    }
+
+    /** 
+    * Carga una instrucción de comparación basada en el operador proporcionado.
+    * 
+    * Este método convierte un operador de comparación (como `==`, `>`, `>=`, `&lt;`, `&lt;=`) en una instrucción correspondiente
+    * para la máquina virtual. Si el operador no es reconocido, se lanza un error.
+    * 
+    * @method loadComparisionOperator
+    * 
+    * @param {string} operator El operador de comparación que se va a cargar. Debe ser uno de los siguientes: `==`, `>`, `>=`, `&lt;`, `&lt;=`.
+    * 
+    * @throws {Error} Si el operador proporcionado no es reconocido.
+    */
+    loadComparisionOperator(operator) {
+        switch (operator) {
+            case '==':
+                this.instructions.push('EQ');
+                break;
+            case '>':
+                this.instructions.push('GT');
+                break;
+            case '>=':
+                this.instructions.push('GTE');
+                break;
+            case '&lt;':
+                this.instructions.push('LT');
+                break;
+            case '&lt;=':
+                this.instructions.push('LTE');
+                break;
+            default:
+                throw new Error(`Operador desconocido: ${operator}`);
+        }
+    }
+
+    /** 
+    * Carga una instrucción binaria basada en el operador aritmético proporcionado.
+    * Este método convierte un operador binario aritmético (como `+`, `-`, `*`, `/`) en una instrucción correspondiente
+    * para la máquina virtual. Si el operador no es reconocido, se lanza un error.
+    * 
+    * @method loadBinaryOperator
+    * 
+    * @param {string} operator El operador binario aritmético que se va a cargar. Debe ser uno de los siguientes: `+`, `-`, `*`, `/`.
+    * 
+    * @throws {Error} Si el operador proporcionado no es reconocido.
+    */
+    loadBinaryOperator(operator) {
+        switch (operator) {
+            case '+':
+                this.instructions.push('ADD');
+                break;
+            case '-':
+                this.instructions.push('SUB');
+                break;
+            case '*':
+                this.instructions.push('MUL');
+                break;
+            case '/':
+                this.instructions.push('DIV');
+                break;
+            default:
+                throw new Error(`Operador desconocido: ${operator}`);
+        }
+    }
+    
+    transpileIfStatement(node) {
+        
+    }
+
+    /** 
+    * Transforma una expresión de comparación en instrucciones correspondientes.
+    * 
+    * Este método carga los valores de la parte derecha e izquierda de una expresión de comparación y luego carga el operador
+    * de comparación correspondiente. Las instrucciones generadas son añadidas a la lista de instrucciones para la máquina virtual.
+    * 
+    * @method transpileComparisionExpression
+    * 
+    * @param {Object} node El nodo que representa una expresión de comparación. Debe tener las propiedades `left`, `right`, y `operator`.
+    */
+    transpileComparisionExpression(node) {
+        this.loadValue(node.right);
+        this.loadValue(node.left);
+        this.loadComparisionOperator(node.operator);
+    }
+
+    /** 
+    * Este método carga el valor de la declaración y luego genera la instrucción de carga para el valor junto con la instrucción
+    * de enlace (`BLD`) para asociar el valor con un índice de enlace específico. La instrucción generada se añade a la lista de
+    * instrucciones para la máquina virtual.
+    * 
+    * @method transpileValueDeclaration
+    * @param {Object} node El nodo que representa la declaración de valor. Este nodo debe tener la propiedad:
+    * - `value`: El valor que se va a cargar.
+    * @param {number} bindingIndex El índice de enlace que se utiliza para asociar el valor cargado.
+    */
+    transpileValueDeclaration(node, bindingIndex) {
+        this.loadValue(node.value);
+        this.instructions.push(`BLD 0 ${bindingIndex}`);
+    }
+
+    /** 
+     * Transforma una declaración de función en instrucciones correspondientes.
+     * Este método carga el nombre de la función y luego genera la instrucción de carga para el nombre junto con la instrucción
+     * de enlace (`BLD`) para asociar la función con un índice de enlace específico. La instrucción generada se añade a la lista de
+     * instrucciones para la máquina virtual.
+     * 
+     * @method transpileFunctionDeclaration
+     * 
+     * @param {Object} node El nodo que representa la declaración de la función. 
+     * @param {number} bindingIndex El índice de enlace que se utiliza para asociar la función cargada.
+     */
+    transpileFunctionDeclaration(node, bindingIndex) {
+        this.loadValue(node.name);
+        this.instructions.push(`BLD 0 ${bindingIndex}`);
+    }
+
+    /** 
+    * Transforma una expresión en instrucciones correspondientes.
+    * 
+    * Este método procesa una expresión que puede ser binaria (con operador y dos operandos) o una expresión simple (como un valor literal o variable).
+    * Si la expresión tiene un operador, genera las instrucciones para cargar ambos operandos y aplicar el operador. 
+    * Si la expresión es un valor literal o una variable, solo genera la instrucción para cargar el valor.
+    * 
+    * @method transpileExpression
+    * @param {Object} node El nodo que representa la expresión.
+    */
+    transpileExpression(node) {
+        if (node.left &amp;&amp; node.right) {
+            this.loadValue(node.left);
+            this.instructions.push(`OPR ${node.operator}`);
+            this.loadValue(node.right);
+        } else {
+            // Para valores literales o variables
+            this.instructions.push(`LDV ${node.value}`);
+        }
+    }
+
+    /** 
+    * Transforma una llamada a función en instrucciones correspondientes para la máquina virtual.
+    * Este método maneja la conversión de una llamada a función, procesando los argumentos de la función 
+    * y generando las instrucciones apropiadas para cada tipo de argumento. 
+    * Si los argumentos son expresiones binarias, se desglosan y se procesan antes de la llamada. 
+    * Finalmente, se genera la instrucción para llamar a la función con los argumentos procesados.
+    * 
+    * @method transpileFunctionCall
+    * @param {Object} node El nodo que representa la llamada a la función.
+    */
+    transpileFunctionCall(node) {
+        console.log('=============================================');
+        console.log(node);
+        console.log('Argumentos: ', node.args);
+
+        node.args.forEach(arg => {
+            if (Array.isArray(arg) &amp;&amp; Array.isArray(arg[0])) {
+                // Si el argumento es un arreglo de arreglos, extrae el valor.
+                const value = arg[0][0];
+                console.log('Argumento: ', value);
+                if (typeof value === 'number') {
+                    this.instructions.push(`LDV ${value}`);
+                } else {
+                    this.instructions.push(`LDV "${value}"`);
+                }
+            } else if (arg.type === 'BinaryExpression') {
+                // Maneja expresiones binarias como `x + 1`
+                const left = arg.left[0][0]; // Primer operando
+                const right = arg.right[0][0]; // Segundo operando
+                const operator = arg.operator;
+                console.log(`Argumento Binario: ${left} ${operator} ${right}`);
+                this.instructions.push(`LDV "${left}"`);
+                this.instructions.push(`LDV "${right}"`);
+                this.instructions.push(`OP "${operator}"`);
+            } else {
+                console.log('Argumento desconocido:', arg);
+            }
+        });
+
+        this.instructions.push(`LDF $${node.functionName}`);
+        this.instructions.push(`APP $${node.functionName} ${node.args.length} ; ${node.functionName}(${node.args.join(', ')})`);
+    }
+
+    /** 
+    * Obtiene el código transpilado en formato de texto.
+    * Este método devuelve las instrucciones generadas durante el proceso de transpilación 
+    * en una cadena de texto, donde cada instrucción se encuentra en una nueva línea. 
+    * Las instrucciones están almacenadas en el arreglo `this.instructions`, que contiene 
+    * las operaciones correspondientes para la máquina virtual.
+    * 
+    * @method getTranspiledCode
+    * @returns {string} El código transpilado, representado como una cadena de texto con instrucciones separadas por saltos de línea.
+    */
+    getTranspiledCode() {
+        return this.instructions.join('\n');
+    }
+}
+
+export default Transpiler;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Loader.html">Loader</a></li><li><a href="Transpiler.html">Transpiler</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addAttribute">addAttribute</a></li><li><a href="global.html#expression">expression</a></li><li><a href="global.html#generateCode">generateCode</a></li><li><a href="global.html#generateExpression">generateExpression</a></li><li><a href="global.html#generateStatement">generateStatement</a></li><li><a href="global.html#getFunctionAttributes">getFunctionAttributes</a></li><li><a href="global.html#getResults">getResults</a></li><li><a href="global.html#getResultsCommander">getResultsCommander</a></li><li><a href="global.html#getTranspiledCode">getTranspiledCode</a></li><li><a href="global.html#identifier">identifier</a></li><li><a href="global.html#initializeAttributes">initializeAttributes</a></li><li><a href="global.html#loadBinaryOperator">loadBinaryOperator</a></li><li><a href="global.html#loadComparisionOperator">loadComparisionOperator</a></li><li><a href="global.html#loadValue">loadValue</a></li><li><a href="global.html#loader">loader</a></li><li><a href="global.html#packman_int">packman_int</a></li><li><a href="global.html#packman_ws">packman_ws</a></li><li><a href="global.html#parameters">parameters</a></li><li><a href="global.html#parseBIESCode">parseBIESCode</a></li><li><a href="global.html#parser">parser</a></li><li><a href="global.html#program">program</a></li><li><a href="global.html#transformLetDeclarationsWithLambdas">transformLetDeclarationsWithLambdas</a></li><li><a href="global.html#transpile">transpile</a></li><li><a href="global.html#transpileComparisionExpression">transpileComparisionExpression</a></li><li><a href="global.html#transpileExpression">transpileExpression</a></li><li><a href="global.html#transpileFunctionCall">transpileFunctionCall</a></li><li><a href="global.html#transpileFunctionDeclaration">transpileFunctionDeclaration</a></li><li><a href="global.html#transpileValueDeclaration">transpileValueDeclaration</a></li><li><a href="global.html#transpiler">transpiler</a></li><li><a href="global.html#visit">visit</a></li><li><a href="global.html#visitAssignment">visitAssignment</a></li><li><a href="global.html#visitComparison">visitComparison</a></li><li><a href="global.html#visitConstDeclaration">visitConstDeclaration</a></li><li><a href="global.html#visitElseIfStatement">visitElseIfStatement</a></li><li><a href="global.html#visitElseStatement">visitElseStatement</a></li><li><a href="global.html#visitExpression">visitExpression</a></li><li><a href="global.html#visitExpressionStatement">visitExpressionStatement</a></li><li><a href="global.html#visitFunctionCall">visitFunctionCall</a></li><li><a href="global.html#visitFunctionDeclaration">visitFunctionDeclaration</a></li><li><a href="global.html#visitIfStatement">visitIfStatement</a></li><li><a href="global.html#visitLambdaExpression">visitLambdaExpression</a></li><li><a href="global.html#visitLetDeclaration">visitLetDeclaration</a></li><li><a href="global.html#visitPrintStatement">visitPrintStatement</a></li><li><a href="global.html#visitReturnStatement">visitReturnStatement</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Nov 15 2024 10:54:02 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

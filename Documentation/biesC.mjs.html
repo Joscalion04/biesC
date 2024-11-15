@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: biesC.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: biesC.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import fs from 'fs';
+import readline from 'readline';
+
+/**
+* Clase que representa un árbol de sintaxis abstracta (AST) para el lenguaje BiesC.
+* @author Manuel Mora Sandi 
+* @author Derek Rojas Mendoza
+* @author Josué Vindas Pérez
+* @author Joseph León Cabezas
+*/
+
+/** 
+* Elimina los espacios en blanco al principio de la cadena de texto. 
+* Este método recibe una cadena de texto y elimina todos los espacios en blanco 
+* al inicio de la misma. El proceso continúa hasta que se encuentra con un 
+* carácter no espacial o hasta que se alcanza el final de la cadena.
+* 
+* @method packman_ws
+* @param {string} input - La cadena de texto de entrada que puede contener espacios en blanco al principio.
+* @returns {string} La cadena de texto resultante después de eliminar los espacios iniciales.
+*/
+function packman_ws(input) {
+    let i = 0;
+    while (i &lt; input.length &amp;&amp; input[i] === ' ') {
+        i++;
+    }
+    return input.slice(i);
+}
+
+/** 
+* Extrae el primer número entero al inicio de una cadena de texto.
+* Este método recibe una cadena de texto y extrae el primer número entero 
+* que se encuentra al principio de la cadena. El número puede estar compuesto 
+* solo por dígitos (sin espacios). 
+*  @method packman_int
+* @param {string} input - La cadena de texto de entrada que puede contener un número al principio.
+* @returns {Array} Un arreglo con dos elementos:
+*   - El primer elemento es el número entero extraído (como cadena).
+*   - El segundo elemento es el resto de la cadena después del número.
+*/
+function packman_int(input) {
+    let i = 0;
+    while (i &lt; input.length &amp;&amp; /\d/.test(input[i])) {
+        i++;
+    }
+    return [input.slice(0, i), input.slice(i)];
+}
+
+/** 
+ * Lee el contenido de un archivo y lo procesa mediante un analizador sintáctico.
+ * Este método recibe el nombre de un archivo, lee su contenido en formato de texto 
+ * y lo pasa a través de un analizador sintáctico (presumiblemente la función 
+ * `program`) para procesarlo. 
+ * 
+ * @method parser
+ * @param {string} filename - El nombre del archivo que contiene el contenido a analizar.
+ * @throws {Error} Si ocurre un error al leer el archivo o procesar el contenido.
+ */
+function parser(filename) {
+    const content = fs.readFileSync(filename, 'utf8');
+    return program(content);
+}
+
+/** 
+* Procesa una cadena de entrada, extrayendo expresiones y construyendo un programa.
+* Este método toma una cadena de texto como entrada, limpia los espacios en blanco 
+* al principio, y luego procesa las expresiones que contiene. Cada expresión se extrae 
+* utilizando la función `expression` y se almacena en un array de expresiones. 
+* Al final, se devuelve un objeto que representa un programa con el tipo `program` 
+* y las expresiones que ha encontrado.
+* 
+* @method program
+* @param {string} input - La cadena de texto que contiene el código a procesar.
+* @returns {Object} Un objeto que representa un programa, con el tipo `program` y un array de expresiones extraídas.
+* @throws {Error} Si ocurre un error durante el análisis de las expresiones.
+*/
+function program(input) {
+    input = packman_ws(input);
+    const expressions = [];
+    while (input.length > 0) {
+        const [expr, rest] = expression(input);
+        expressions.push(expr);
+        input = packman_ws(rest);
+    }
+    return { type: 'program', expressions };
+}
+
+/** 
+* Procesa una cadena de entrada, extrayendo expresiones y construyendo un programa.
+* Este método toma una cadena de texto como entrada, limpia los espacios en blanco 
+* al principio, y luego procesa las expresiones que contiene. Cada expresión se extrae 
+* utilizando la función `expression` y se almacena en un array de expresiones.
+* 
+* @method program
+* @param {string} input - La cadena de texto que contiene el código a procesar.
+* @returns {Object} Un objeto que representa un programa, con el tipo `program` y un array de expresiones extraídas.
+* @throws {Error} Si ocurre un error durante el análisis de las expresiones.
+*/
+function expression(input) {
+    if (!input || input.trim().length === 0) {
+        throw new Error(`Unexpected empty expression.`);
+    }
+    console.log(`Evaluating expression with input: "${input}"`);
+
+   if (input.startsWith('let ')) {
+    input = packman_ws(input.slice(4));
+    const [id, rest1] = identifier(input);
+    input = packman_ws(rest1);
+    
+    // Si encontramos una función de flecha (=>), la procesamos correctamente
+    if (input.startsWith('=')) {
+        input = packman_ws(input.slice(1));
+        if (input.startsWith('(')) {
+            input = packman_ws(input.slice(1));
+            const [params, rest2] = parameters(input);
+            input = packman_ws(rest2);
+            if (input.startsWith(') =>')) {
+                input = packman_ws(input.slice(4));  // Eliminar ' =>'
+                const [body, rest3] = expression(input);
+                return [{ type: 'let', id, expr: { type: 'arrow', params, body } }, rest3];
+            } else {
+                throw new Error(`Expected '=>' after parameters, found: ${input}`);
+            }
+        } else {
+            const [expr, rest2] = expression(input);
+            return [{ type: 'let', id, expr }, rest2];
+        }
+    } else {
+        console.log(`Expected '=' after identifier in let declaration, found: ${input}`);
+        throw new Error(`Expected '=' after identifier in let declaration, found: ${input}`);
+    }
+} else if (/^\d/.test(input)) {
+        const [num, rest] = packman_int(input);
+        return [{ type: 'num', value: parseInt(num, 10) }, rest];
+    } else if (input.startsWith('(')) {
+        input = packman_ws(input.slice(1));
+        const [params, rest1] = parameters(input);
+        input = packman_ws(rest1);
+
+        const arrowIndex = input.indexOf('=>');
+        if (arrowIndex === 0) {
+            input = packman_ws(input.slice(2));
+            const [body, rest2] = expression(input);
+            return [{ type: 'arrow', params, body }, rest2];
+        } else {
+            throw new Error(`Expected '=>' after parameters, found: ${input}`);
+        }
+    } else if (input.startsWith('"')) {
+        const endIndex = input.indexOf('"', 1);
+        if (endIndex !== -1) {
+            const str = input.slice(1, endIndex);
+            return [{ type: 'str', value: str }, input.slice(endIndex + 1)];
+        } else {
+            throw new Error(`Unterminated string literal, found: ${input}`);
+        }
+    } else if (input.startsWith('print(')) {
+        input = packman_ws(input.slice(6));
+        const [arg, rest1] = expression(input);
+        if (rest1.startsWith(')')) {
+            return [{ type: 'call', id: 'print', args: [arg] }, rest1.slice(1)];
+        } else {
+            throw new Error(`Expected ')' after print arguments, found: ${rest1}`);
+        }
+    } else {
+        const [id, rest] = identifier(input);
+        return [{ type: 'id', name: id }, rest];
+    }
+    throw new Error(`Invalid expression, found: ${input}`);
+}
+
+/** 
+* Analiza una expresión en la cadena de entrada y devuelve una representación estructurada de la expresión.
+* Este método procesa el input para reconocer diferentes tipos de expresiones, tales como:
+* - Declaraciones `let` con valores asignados, incluyendo funciones flecha.
+* - Números enteros.
+* - Expresiones de función flecha.
+* - Cadenas de texto.
+* - Llamadas a funciones como `print`.
+* - Identificadores (variables).
+* 
+* @method expression
+* @param {string} input - La cadena de texto que contiene la expresión a analizar.
+* @returns {Object} Un arreglo que contiene un objeto representando la expresión analizada y el resto del input no procesado.
+*     - El objeto de la expresión puede tener los siguientes tipos: `let`, `num`, `arrow`, `str`, `call`, `id`.
+*     - El segundo valor es el input restante después de procesar la expresión.
+* @throws {Error} Si se encuentra una expresión vacía o un formato no reconocido. 
+*/
+function parseAssignment(input) {
+    const assignmentPattern = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*)/;
+    const match = assignmentPattern.exec(input);
+    if (match) {
+        const identifier = match[1];
+        const expression = match[2].trim();
+        console.log(`Assignment detected: ${identifier} assigned with expression: ${expression}`);
+        return [identifier, expression]; // Devuelve el identificador y la expresión
+    }
+    return null;
+}
+
+/** 
+ * Analiza la cadena de entrada para identificar un identificador o una asignación.
+ * Este método primero intenta detectar una asignación utilizando `parseAssignment`. Si no se encuentra una asignación,
+ * entonces busca un identificador válido que siga las reglas de nomenclatura estándar para variables en JavaScript (debe comenzar
+ * con una letra o guión bajo, seguido de letras, números o guiones bajos).
+ * 
+ * @method identifier
+ * @param {string} input - La cadena de texto que contiene el posible identificador o asignación.
+ * @returns {Array} Un arreglo con dos elementos:
+ *   - El primer elemento es el identificador encontrado (como una cadena).
+ *   - El segundo elemento es el resto de la cadena de entrada después de haber extraído el identificador.
+ *   Si no se encuentra un identificador válido, se lanza un error.
+ * 
+ * @throws {Error} Si el identificador es inválido o no se puede procesar correctamente.
+ */
+function identifier(input) {
+    if (!input || input.trim() === '') {
+        console.log("Skipping empty or whitespace line.");
+        return ["", input.slice(1)];
+    }
+
+    // Revisar si es una asignación o declaración de función
+    let result = parseAssignment(input);
+    if (result) {
+        return result;
+    }
+
+    // Si no es una asignación, buscar un identificador
+    const match = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(input);
+    if (match) {
+        console.log(`Identifier found: ${match[0]}`);
+        return [match[0], input.slice(match[0].length)];
+    } else {
+        console.log(`Invalid identifier, found: ${input}`);
+        throw new Error(`Invalid identifier, found: ${input}`);
+    }
+}
+
+/** 
+* Analiza los parámetros de una función en una cadena de entrada.
+* Este método extrae una lista de parámetros separados por comas de una cadena de texto que representa la declaración de los
+* parámetros de una función. El proceso se detiene cuando se encuentra el cierre de los paréntesis `)` o si se detecta un error
+* en la estructura de los parámetros.
+* 
+* @method parameters
+* @param {string} input - La cadena de texto que contiene los parámetros de la función entre paréntesis.
+* @returns {Array} Un arreglo con dos elementos:
+*   - El primer elemento es un arreglo de los parámetros de la función (cada parámetro es un identificador como cadena).
+*   - El segundo elemento es el resto de la cadena después de los parámetros (normalmente comenzará después del paréntesis de cierre).
+* 
+* @throws {Error} Si no se encuentra el paréntesis de cierre `)` después de los parámetros o si la cadena tiene una estructura incorrecta.
+*/
+function parameters(input) {
+    const params = [];
+    while (input.length > 0 &amp;&amp; input[0] !== ')') {
+        const [param, rest] = identifier(input);
+        params.push(param);
+        input = packman_ws(rest);
+        if (input[0] === ',') {
+            input = packman_ws(input.slice(1));
+        }
+    }
+    if (input[0] === ')') {
+        return [params, input.slice(1)];
+    }
+    throw new Error(`Expected ')' after parameters, found: ${input}`);
+}
+
+/** 
+* Genera el código a partir de un árbol de sintaxis abstracta (AST).
+* Este método recorre las declaraciones dentro de un AST y las pasa a una función encargada de generar el código correspondiente
+* para cada una de las instrucciones encontradas. Cada declaración se procesa y se escribe en un flujo de salida especificado.
+* 
+* @method generateCode
+* @param {Object} ast - El árbol de sintaxis abstracta que contiene las declaraciones y expresiones.
+* @param {Object} stream - El flujo de salida donde se escribirá el código generado (puede ser un archivo, consola, etc.).
+*/
+function generateCode(ast, stream) {
+    ast.statements.forEach(statement => generateStatement(statement, stream));
+}
+
+/** 
+ * Genera el código correspondiente a una declaración dentro de un flujo de salida.
+ * Este método procesa una declaración de tipo `let` o `call`, generando el código adecuado 
+ * para cada tipo y escribiéndolo en el flujo de salida proporcionado. Si la declaración es de tipo `let`, 
+ * se genera una asignación de variable. Si es una llamada de función (`call`), se genera el código para 
+ * la invocación de la función, como `print()` u otras funciones definidas en el código.
+ * 
+ * @method generateStatement
+ * @param {Object} statement - La declaración que debe ser procesada, con al menos una propiedad `type` que especifica el tipo de declaración.
+ * @param {Object} stream - El flujo de salida donde se escribirá el código generado (puede ser un archivo, consola, etc.).
+ */
+function generateStatement(statement, stream) {
+    switch (statement.type) {   //switch para los tipos de declaraciones                           
+        case 'let':
+            stream.write(`let ${statement.id} = `);
+            generateExpression(statement.expr, stream);
+            stream.write('\n'); // Sin punto y coma al final de la declaración
+            break;
+        case 'call':    
+            if (statement.id === 'print') {
+                stream.write(`print(`);
+            } else {
+                stream.write(`${statement.id}(`);
+            }
+            statement.args.forEach((arg, index) => {
+                if (index > 0) stream.write(' + ');
+                generateExpression(arg, stream);
+            });
+            stream.write(`)\n`);
+            break;
+        default:
+            stream.write(`/* Error: tipo de declaración desconocido: ${statement.type} */\n`);
+    }
+}
+
+/** 
+* Genera el código correspondiente a una expresión dentro de un flujo de salida.
+* Este método procesa diferentes tipos de expresiones (como funciones de flecha, expresiones matemáticas, 
+* identificadores, números, cadenas, concatenaciones y llamadas a funciones) y genera el código adecuado 
+* para cada tipo de expresión. El código generado se escribe en el flujo de salida proporcionado.
+* 
+* @method generateExpression
+* @param {Object} expr - La expresión que debe ser procesada. Puede ser de varios tipos
+* @param {Object} stream - El flujo de salida donde se escribirá el código generado (puede ser un archivo, consola, etc.).
+*/
+function generateExpression(expr, stream) {
+    switch (expr.type) {
+        case 'arrow':
+            stream.write('(');
+            expr.params.forEach((param, index) => {
+                if (index > 0) stream.write(', ');
+                stream.write(param);
+            });
+            stream.write(`) => `);
+            generateExpression(expr.body, stream);
+            break;
+        case 'expr':
+            generateExpression(expr.left, stream);
+            stream.write(` ${expr.op === 'plus' ? '+' : '-'} `);
+            generateExpression(expr.right, stream);
+            break;
+        case 'id':
+            stream.write(expr.value);
+            break;
+        case 'num':
+            stream.write(expr.value.toString());
+            break;
+        case 'str':
+            stream.write(`"${expr.value}"`);
+            break;
+        case 'concat':
+            generateExpression(expr.left, stream);
+            stream.write(' + ');
+            generateExpression(expr.middle, stream);
+            stream.write(' + ');
+            generateExpression(expr.right, stream);
+            break;
+        case 'call':
+            stream.write(`${expr.id}()`);
+            break;
+        default:
+            stream.write(`/* Error: expresión desconocida: ${expr.type} */`);
+    }
+}
+
+// ejemplo de uso
+function versionCompleja3(outputFileName) {
+    const ast = {
+        statements: [
+            { type: 'let', id: 'splash', expr: { type: 'arrow', params: ['msg'], body: { type: 'id', value: 'print(msg)' } } },
+            { type: 'let', id: 'greetings', expr: { type: 'arrow', params: [], body: { type: 'str', value: 'Hello World!' } } },
+            { type: 'let', id: 'version', expr: { type: 'expr', left: { type: 'num', value: 4 }, op: 'plus', right: { type: 'expr', left: { type: 'num', value: 1 }, op: 'minus', right: { type: 'num', value: 2 } } } },
+            { type: 'call', id: 'splash', args: [{ type: 'concat', left: { type: 'str', value: 'Testing helloworld Version ' }, middle: { type: 'id', value: 'version' }, right: { type: 'str', value: ' ***' } }] },
+            { type: 'call', id: 'print', args: [{ type: 'call', id: 'greetings', args: [] }] }
+        ]
+    };
+
+    const stream = fs.createWriteStream(outputFileName);
+    generateCode(ast, stream);
+    stream.end();
+    console.log(`Código generado en el archivo ${outputFileName}`);
+}
+
+// ejemplo de uso
+function versionCompleja0(outputFileName) {
+    const ast = {
+        statements: [
+            { type: 'call', id: 'print', args: [{ type: 'str', value: 'Testing helloworld Version 0 ***' }] },
+            { type: 'call', id: 'print', args: [{ type: 'str', value: 'Hello World!' }] }
+        ]
+    };
+
+    const stream = fs.createWriteStream(outputFileName);
+    generateCode(ast, stream);
+    stream.end();
+    console.log(`Código generado en el archivo ${outputFileName}`);
+}
+
+
+// Ejecutar pruebas
+versionCompleja0('versionCompleja0.js');
+versionCompleja3('versionCompleja3.js');</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Loader.html">Loader</a></li><li><a href="Transpiler.html">Transpiler</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addAttribute">addAttribute</a></li><li><a href="global.html#expression">expression</a></li><li><a href="global.html#generateCode">generateCode</a></li><li><a href="global.html#generateExpression">generateExpression</a></li><li><a href="global.html#generateStatement">generateStatement</a></li><li><a href="global.html#getFunctionAttributes">getFunctionAttributes</a></li><li><a href="global.html#getResults">getResults</a></li><li><a href="global.html#getResultsCommander">getResultsCommander</a></li><li><a href="global.html#getTranspiledCode">getTranspiledCode</a></li><li><a href="global.html#identifier">identifier</a></li><li><a href="global.html#initializeAttributes">initializeAttributes</a></li><li><a href="global.html#loadBinaryOperator">loadBinaryOperator</a></li><li><a href="global.html#loadComparisionOperator">loadComparisionOperator</a></li><li><a href="global.html#loadValue">loadValue</a></li><li><a href="global.html#loader">loader</a></li><li><a href="global.html#packman_int">packman_int</a></li><li><a href="global.html#packman_ws">packman_ws</a></li><li><a href="global.html#parameters">parameters</a></li><li><a href="global.html#parseBIESCode">parseBIESCode</a></li><li><a href="global.html#parser">parser</a></li><li><a href="global.html#program">program</a></li><li><a href="global.html#transformLetDeclarationsWithLambdas">transformLetDeclarationsWithLambdas</a></li><li><a href="global.html#transpile">transpile</a></li><li><a href="global.html#transpileComparisionExpression">transpileComparisionExpression</a></li><li><a href="global.html#transpileExpression">transpileExpression</a></li><li><a href="global.html#transpileFunctionCall">transpileFunctionCall</a></li><li><a href="global.html#transpileFunctionDeclaration">transpileFunctionDeclaration</a></li><li><a href="global.html#transpileValueDeclaration">transpileValueDeclaration</a></li><li><a href="global.html#transpiler">transpiler</a></li><li><a href="global.html#visit">visit</a></li><li><a href="global.html#visitAssignment">visitAssignment</a></li><li><a href="global.html#visitComparison">visitComparison</a></li><li><a href="global.html#visitConstDeclaration">visitConstDeclaration</a></li><li><a href="global.html#visitElseIfStatement">visitElseIfStatement</a></li><li><a href="global.html#visitElseStatement">visitElseStatement</a></li><li><a href="global.html#visitExpression">visitExpression</a></li><li><a href="global.html#visitExpressionStatement">visitExpressionStatement</a></li><li><a href="global.html#visitFunctionCall">visitFunctionCall</a></li><li><a href="global.html#visitFunctionDeclaration">visitFunctionDeclaration</a></li><li><a href="global.html#visitIfStatement">visitIfStatement</a></li><li><a href="global.html#visitLambdaExpression">visitLambdaExpression</a></li><li><a href="global.html#visitLetDeclaration">visitLetDeclaration</a></li><li><a href="global.html#visitPrintStatement">visitPrintStatement</a></li><li><a href="global.html#visitReturnStatement">visitReturnStatement</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Nov 15 2024 10:54:02 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: loader.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: loader.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import biesGrammarVisitor from '../parser/biesVisitor.js';
+
+/**
+* Clase Loader que extiende de biesGrammarVisitor y se encarga de cargar los detalles de las instrucciones
+* del código fuente de BIES. Esta clase se encarga de recorrer el árbol de análisis sintáctico generado por
+* ANTLR y extraer los detalles de las instrucciones del código fuente.
+* 
+* @author Manuel Mora Sandi 
+* @author Derek Rojas Mendoza
+* @author Josué Vindas Pérez
+* @author Joseph León Cabezas
+*/
+class Loader extends biesGrammarVisitor {
+    /**
+    * Constructor de la clase Loader. 
+    * @constructor
+    * @param {string} functionId - Identificador de la función
+    * @param {object} results - el resultado de la ejecución
+    * @param {object} globalContext - Contexto global de la función
+    * @param {object} currentFunction - Función actual en ejecución
+    * @param {object} functionAttributes - Atributos de la función
+    */
+    constructor() {
+        super();
+        this.functionId = 0;
+        this.results = [];
+        this.globalContext = 'main';
+        this.currentFunction = this.globalContext;
+        this.functionAttributes = {};
+        this.functionAttributes[this.globalContext] = this.initializeAttributes();
+    }
+
+    /** 
+     * Inicializa los atributos para una nueva función o contexto, asignando un ID único 
+     * y una secuencia vacía.
+     * @method initializeAttributes
+     * 
+     * @returns {Object} Un objeto con un ID único y una secuencia vacía.
+     * @returns {number} return.id El identificador único de la función o contexto.
+     * @returns {Array} return.secuencia Una secuencia vacía, lista para almacenar valores.
+     */
+    initializeAttributes() {
+        return {
+            id: this.functionId++,
+            secuencia: []
+        };
+    }
+
+    /** 
+    * Agrega un nuevo atributo a la secuencia de la función actual y a los resultados globales.
+    * Este método verifica si hay una función actual y, si es así, agrega los detalles a su secuencia.
+    * 
+    * @method addAttribute
+    * 
+    * @param {Object} details Los detalles del atributo que se agregan a la secuencia y a los resultados.
+    * @returns {void} Este método no devuelve ningún valor.
+    */
+    addAttribute(details) {
+        if (this.currentFunction &amp;&amp; this.functionAttributes[this.currentFunction]) {
+            this.functionAttributes[this.currentFunction].secuencia.push(details);
+        }
+        this.results.push(details);
+    }
+
+    /** 
+    * Procesa una declaración de retorno en una expresión y agrega los detalles de la declaración 
+    * de retorno a los atributos de la función actual y a los resultados globales.
+    * 
+    * @method visitReturnStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración de retorno, que contiene la expresión a retornar.
+    * @returns {Object} Un objeto que representa la declaración de retorno, con el tipo y el valor de la expresión.
+    */
+    visitReturnStatement(ctx) {
+        const value = this.visit(ctx.expression());
+        const returnDetails = {
+            type: 'ReturnStatement',
+            value
+        };
+        this.addAttribute(returnDetails);
+        return returnDetails;
+    }
+
+    /** 
+    * Procesa una declaración `let`, evaluando su expresión y manejando el caso donde la 
+    * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
+    * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración `let` 
+    * en los atributos de la función actual y los resultados globales.
+    * 
+    * @method visitLetDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración `let`, que contiene el identificador y la expresión a evaluar.
+    * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
+    */
+    visitLetDeclaration(ctx) {
+        const id = ctx.ID().getText();
+        
+        // Guardamos el valor original de processingLambda
+        const wasProcessingLambda = this.processingLambda;
+        this.processingLambda = true;
+        const value = this.visit(ctx.expression());
+        this.processingLambda = wasProcessingLambda;
+
+        // Si el valor es una lambda
+        if (value &amp;&amp; value.type === 'LambdaExpression') {
+            // Registrar la lambda como una función
+            this.functionAttributes[id] = this.initializeAttributes();
+            
+            // Crear los detalles de la función
+            const functionDetails = {
+                type: 'FunctionDeclaration',
+                name: id,
+                params: value.params
+            };
+
+            // Añadir la declaración de función al contexto global
+            const prevFunction = this.currentFunction;
+            this.currentFunction = id;
+            this.addAttribute(functionDetails);
+
+            // Añadir el cuerpo de la lambda
+            if (value.body &amp;&amp; value.body.type === 'PrintStatement') {
+                this.functionAttributes[id].secuencia.push(value.body);
+            }
+
+            // Restaurar el contexto
+            this.currentFunction = prevFunction;
+        }
+
+        const letDetails = {
+            type: 'LetDeclaration',
+            id,
+            value
+        };
+
+        this.addAttribute(letDetails);
+        return letDetails;
+    }
+
+    /** 
+    * Procesa una expresión de tipo `Lambda`, extrayendo sus parámetros y cuerpo. 
+    * Si la expresión tiene un bloque de instrucciones, las procesa, de lo contrario, 
+    * evalúa la expresión. Retorna un objeto que representa la lambda con su tipo, 
+    * parámetros y cuerpo.
+    * 
+    * @method visitLambdaExpression
+    * 
+    * @param {Object} ctx El contexto de la expresión lambda, que contiene los parámetros y el cuerpo de la lambda.
+    * @returns {Object} Un objeto que representa la expresión lambda, con el tipo, los parámetros y el cuerpo.
+    * @returns {string[]} return.params Los parámetros de la lambda.
+    * @returns {Array|Object} return.body El cuerpo de la lambda, que puede ser un array de instrucciones o una expresión.
+    */
+    visitLambdaExpression(ctx) {
+        const params = ctx.parameterList()
+            ? ctx.parameterList().ID().map(param => param.getText())
+            : [];
+
+        let body;
+        if (ctx.block()) {
+            body = ctx.block().statement().map(stmt => this.visit(stmt));
+        } else if (ctx.expression()) {
+            body = this.visit(ctx.expression());
+        }
+
+        return {
+            type: 'LambdaExpression',
+            params,
+            body
+        };
+    }
+
+    /** 
+    * Procesa una declaración de constante `const`, evaluando su expresión y registrando los detalles
+    * de la constante en los atributos de la función actual y en los resultados globales.
+    * Este método obtiene el identificador y el valor de la constante, y los guarda como parte
+    * de la declaración de constante.
+    * 
+    * @method visitConstDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración `const`, que contiene el identificador y la expresión de la constante.
+    * @returns {Object} Un objeto que representa la declaración `const`, con el tipo, el identificador y el valor evaluado.
+    */
+    visitConstDeclaration(ctx) {
+        const id = ctx.ID().getText();
+        const value = this.visit(ctx.expression());
+
+        const constDetails = {
+            type: 'ConstDeclaration',
+            id,
+            value
+        };
+        this.addAttribute(constDetails);
+        return constDetails;
+    }
+
+    /** 
+    * Procesa una expresión que puede contener múltiples asignaciones, evaluando cada una de ellas
+    * y construyendo una expresión binaria que las combine. Si hay más de una asignación, se genera
+    * una expresión binaria para cada par de asignaciones sucesivas, usando el operador entre ellas.
+    * 
+    * @method visitExpression
+    * 
+    * @param {Object} ctx El contexto de la expresión, que contiene una lista de asignaciones.
+    * @returns {Object|null} Una expresión binaria que representa el resultado de evaluar las asignaciones,
+    * o `null` si no hay asignaciones.
+    * @returns {Object} return.type El tipo de la expresión, que será siempre `BinaryExpression` en el caso de múltiples asignaciones.
+    * @returns {Object} return.left El resultado de la primera asignación o expresión.
+    * @returns {string} return.operator El operador entre las asignaciones.
+    * @returns {Object} return.right El valor de la asignación siguiente en la expresión binaria.
+    */
+    visitExpression(ctx) {
+        const assignments = ctx.assignment();
+        if (assignments.length === 0) return null;
+
+        let result = this.visit(assignments[0]);
+
+        for (let i = 1; i &lt; assignments.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const assignmentValue = this.visit(assignments[i]);
+            const expressionDetails = {
+                type: 'BinaryExpression',
+                left: result,
+                operator,
+                right: assignmentValue
+            };
+            this.addAttribute(expressionDetails);
+            result = expressionDetails;
+        }
+
+        return result;
+    }
+
+    /** 
+    * Procesa una asignación que puede contener múltiples comparaciones, evaluando cada una de ellas
+    * y construyendo una expresión de asignación que las combine. Si hay más de una comparación, 
+    * se genera una expresión de asignación para cada par de comparaciones sucesivas, usando el operador entre ellas.
+    * 
+    * @method visitAssignment
+    * 
+    * @param {Object} ctx El contexto de la asignación, que contiene una lista de comparaciones.
+    * @returns {Object|null} Una expresión de asignación que representa el resultado de evaluar las comparaciones,
+    * o `null` si no hay comparaciones.
+    * @returns {Object} return.type El tipo de la expresión, que será siempre `AssignmentExpression` en el caso de múltiples comparaciones.
+    * @returns {Object} return.left El resultado de la primera comparación o expresión.
+    * @returns {string} return.operator El operador entre las comparaciones.
+    * @returns {Object} return.right El valor de la comparación siguiente en la expresión de asignación.
+    */
+    visitAssignment(ctx) {
+        const comparisons = ctx.comparison();
+        if (comparisons.length === 0) return null;
+
+        let result = this.visit(comparisons[0]);
+
+        for (let i = 1; i &lt; comparisons.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const comparisonValue = this.visit(comparisons[i]);
+            const assignmentDetails = {
+                type: 'AssignmentExpression',
+                left: result,
+                operator,
+                right: comparisonValue
+            };
+            this.addAttribute(assignmentDetails);
+            result = assignmentDetails;
+        }
+
+        return result;
+    }
+
+    visitComparison(ctx) {
+        const factors = ctx.factor();
+        if (factors.length === 0) return null;
+
+        let result = this.visit(factors[0]);
+        
+        for (let i = 1; i &lt; factors.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const factorValue = this.visit(factors[i]);
+            const comparisonDetails = {
+                type: 'ComparisionExpression',
+                left: result,
+                operator,
+                right: factorValue
+            };
+            this.addAttribute(comparisonDetails);
+            result = comparisonDetails;
+        }
+
+        return result;
+    }
+
+    // visitTerm(ctx) {
+    //     const factors = ctx.factor();
+    //     if (factors.length === 0) return null;
+
+    //     let result = this.visit(factors[0]);
+
+    //     for (let i = 1; i &lt; factors.length; i++) {
+    //         const operator = ctx.getChild(2 * i - 1).getText();
+    //         const factorValue = this.visit(factors[i]);
+    //         const termDetails = {
+    //             type: 'TermExpression',
+    //             left: result,
+    //             operator,
+    //             right: factorValue
+    //         };
+    //         this.addAttribute(termDetails);
+    //         result = termDetails;
+    //     }
+
+    //     return result;
+    // }
+
+    /** 
+    * Procesa una comparación que puede contener múltiples factores, evaluando cada uno de ellos
+    * y construyendo una expresión de comparación que los combine. Si hay más de un factor, se genera
+    * una expresión de comparación para cada par de factores sucesivos, usando el operador entre ellos.
+    * 
+    * @method visitComparison
+    * 
+    * @param {Object} ctx El contexto de la comparación, que contiene una lista de factores.
+    * @returns {Object|null} Una expresión de comparación que representa el resultado de evaluar los factores, o `null` si no hay factores.
+    * @returns {Object} return.type El tipo de la expresión, que será siempre `ComparisionExpression` (nota: se podría corregir la ortografía a `ComparisonExpression`).
+    * @returns {Object} return.left El resultado del primer factor o expresión.
+    * @returns {string} return.operator El operador entre los factores.
+    * @returns {Object} return.right El valor del siguiente factor en la expresión de comparación.
+    */
+    visitFactor(ctx) {
+        if (ctx.INT()) {
+            return parseInt(ctx.INT().getText());
+        }
+        if (ctx.FLOAT()) {
+            return parseFloat(ctx.FLOAT().getText());
+        }
+        if (ctx.ID()) {
+            return ctx.ID().getText();
+        }
+        if (ctx.STRING()) {
+            return ctx.STRING().getText().slice(1, -1);
+        }
+        if (ctx.expression()) {
+            return this.visit(ctx.expression());
+        }
+        if (ctx.lambdaExpression()) {
+            return this.visit(ctx.lambdaExpression());
+        }
+        if (ctx.functionCall()) {
+            return this.visit(ctx.functionCall());
+        }
+        if (ctx.printStatement()) {
+            return this.visit(ctx.printStatement());
+        }
+        return null;
+    }
+
+    // Procesa operaciones de suma y resta (expression)
+    // visitExpression(ctx) {
+    //     let result = this.visit(ctx.term(0));
+
+    //     for (let i = 1; i &lt; ctx.term().length; i++) {
+    //         const operator = ctx.getChild(2 * i - 1).getText();
+    //         const rightValue = this.visit(ctx.term(i));
+    //         const expressionDetails = {
+    //             type: 'BinaryExpression1',
+    //             left: result,
+    //             operator,
+    //             right: rightValue
+    //         };
+    //         this.addAttribute(expressionDetails);
+    //         result = expressionDetails;
+    //     }
+
+    //     return result;
+    // }
+
+    // Procesa operaciones de multiplicación y división (term)
+    // visitTerm(ctx) {
+    //     let result = this.visit(ctx.factor(0));
+
+    //     for (let i = 1; i &lt; ctx.factor().length; i++) {
+    //         const operator = ctx.getChild(2 * i - 1).getText();
+    //         const rightValue = this.visit(ctx.factor(i));
+    //         const termDetails = {
+    //             type: 'BinaryExpression2',
+    //             left: result,
+    //             operator,
+    //             right: rightValue
+    //         };
+    //         // this.addAttribute(termDetails);
+    //         result = termDetails;
+    //     }
+
+    //     return result;
+    // }
+
+    /** 
+    * Procesa una llamada a función, extrayendo el nombre de la función y los argumentos que le son pasados.
+    * Si la llamada contiene argumentos, estos son evaluados y almacenados en un array.
+    * Los detalles de la llamada a la función se registran en los atributos de la función actual y en los resultados globales.
+    * 
+    * @method visitFunctionCall
+    * 
+    * @param {Object} ctx El contexto de la llamada a función, que contiene el identificador de la función y la lista de argumentos.
+    * @returns {Object} Un objeto que representa la llamada a la función, con el tipo, el nombre de la función y los argumentos evaluados.
+    * @returns {string} return.functionName El nombre de la función llamada.
+    * @returns {Array} return.args Una lista de los argumentos evaluados para la llamada a la función.
+    */
+    visitFunctionCall(ctx) {
+        const functionName = ctx.ID().getText();
+        let args = [];
+
+        if (ctx.argumentList()) {
+            args = ctx.argumentList().expression().map(expr => this.visit(expr));
+        }
+
+        const functionCallDetails = {
+            type: 'FunctionCall',
+            functionName,
+            args
+        };
+
+        this.addAttribute(functionCallDetails);
+        return functionCallDetails;
+    }
+
+    /** 
+    * Procesa una declaración `print`, extrayendo y evaluando los argumentos que se pasan a la función `print`.
+    * Los argumentos se almacenan en un array y se registra la declaración de impresión en los atributos de la función
+    * actual solo si no estamos dentro de una lambda. 
+    * 
+    * @method visitPrintStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `print`, que contiene una lista de los argumentos a imprimir.
+    * @returns {Object} Un objeto que representa la declaración de impresión, con el tipo y los argumentos evaluados.
+    * @returns {Array} return.args Una lista de los argumentos que se pasarán a la función `print`, que pueden ser expresiones evaluadas.
+    */
+    visitPrintStatement(ctx) {
+        const args = ctx.argumentList() 
+            ? ctx.argumentList().expression().map(expr => this.visit(expr))
+            : [];
+
+        const printDetails = {
+            type: 'PrintStatement',
+            args: args.flat()
+        };
+
+        // Solo añadimos el print al contexto actual si no estamos dentro de una lambda
+        if (!this.processingLambda) {
+            this.addAttribute(printDetails);
+        }
+
+        return printDetails;
+    }
+
+    /** 
+    * Procesa una declaración de función, extrayendo el nombre de la función y sus parámetros.
+    * Si la declaración incluye un bloque de instrucciones, se visita dicho bloque. Además, se registra
+    * la declaración de la función en el contexto actual y, si es necesario, se crea un nuevo contexto para la función.
+    * 
+    * @method visitFunctionDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración de la función, que contiene el identificador de la función
+    * y la lista de parámetros.
+    * @returns {Object} Un objeto que representa la declaración de la función, con el tipo, el nombre y los parámetros.
+    * @returns {string} return.name El nombre de la función declarada.
+    * @returns {Array} return.params Los parámetros de la función, extraídos del contexto de la declaración.
+    */
+    visitFunctionDeclaration(ctx) {
+        const functionName = ctx.ID().getText();
+        const params = ctx.parameterList() 
+            ? ctx.parameterList().ID().map(param => param.getText())
+            : [];
+
+        const functionDetails = {
+            type: 'FunctionDeclaration',
+            name: functionName,
+            params
+        };
+
+        this.addAttribute(functionDetails);
+
+        // Crear nuevo contexto de función si no existe
+        if (!this.functionAttributes[functionName]) {
+            this.functionAttributes[functionName] = this.initializeAttributes();
+        }
+
+        const previousFunction = this.currentFunction;
+        this.currentFunction = functionName;
+
+        // Visitar el bloque
+        this.visit(ctx.block());
+
+        this.currentFunction = previousFunction;
+
+        return functionDetails;
+    }
+
+    /** 
+    * Procesa una declaración de expresión, evaluando la expresión contenida en la declaración y registrando
+    * los detalles de la expresión en los atributos de la función actual.
+    * 
+    * @method visitExpressionStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración de expresión, que contiene la expresión que se va a evaluar.
+    * @returns {Object} Un objeto que representa la declaración de expresión, con el tipo y la expresión evaluada.
+    * @returns {Object} return.expression El valor de la expresión evaluada.
+    */
+    visitExpressionStatement(ctx) {
+        const expression = this.visit(ctx.expression());
+        const expressionDetails = {
+            type: 'ExpressionStatement',
+            expression
+        };
+
+        this.addAttribute(expressionDetails);
+        return expressionDetails;
+    }
+
+    /*
+    ifStatement: 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
+
+    elseIfStatement: 'else' 'if' '(' expression ')' block;
+
+    elseStatement: ELSE block;
+    */
+
+    /** 
+    * Procesa una declaración `if`, evaluando la condición y registrando los detalles de la declaración `if`.
+    * Si la declaración `if` tiene un bloque de instrucciones, se visita ese bloque. Además, si existen declaraciones
+    * `else if` o `else`, también se procesan.
+    * 
+    * @method visitIfStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `if`, que contiene la condición y los posibles bloques `if`, `else if`, y `else`.
+    * @returns {Object} Un objeto que representa la declaración `if`, con el tipo y la condición evaluada.
+    * @returns {Object} return.condition El valor de la condición evaluada en la declaración `if`.
+    */
+    visitIfStatement(ctx) {
+        const condition = this.visit(ctx.expression());
+        const ifDetails = {
+            type: 'IfStatement',
+            condition
+        };
+
+        this.addAttribute(ifDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        if (ctx.elseIfStatement()) {
+            this.visit(ctx.elseIfStatement());
+        }
+
+        if (ctx.elseStatement()) {
+            this.visit(ctx.elseStatement());
+        }
+
+        return ifDetails;
+    }
+    
+    /** 
+    * Procesa una declaración `else if`, evaluando la condición y registrando los detalles de la declaración `else if`.
+    * Si la declaración `else if` tiene un bloque de instrucciones, se visita ese bloque.
+    * 
+    * @method visitElseIfStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `else if`, que contiene la condición y el bloque de instrucciones asociado.
+    * @returns {Object} Un objeto que representa la declaración `else if`, con el tipo y la condición evaluada.
+    * @returns {Object} return.condition El valor de la condición evaluada en la declaración `else if`.
+    */
+    visitElseIfStatement(ctx) {
+        const condition = this.visit(ctx.expression());
+        const elseIfDetails = {
+            type: 'ElseIfStatement',
+            condition
+        };
+
+        this.addAttribute(elseIfDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        return elseIfDetails;
+    }
+
+    /** 
+    * Procesa una declaración `else` y registra los detalles de la declaración `else`.
+    * Si la declaración `else` tiene un bloque de instrucciones, se visita ese bloque.
+    * 
+    * @method visitElseStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `else`, que puede contener un bloque de instrucciones asociado.
+    * @returns {Object} Un objeto que representa la declaración `else`, con el tipo `ElseStatement`.
+    */
+    visitElseStatement(ctx) {
+        const elseDetails = {
+            type: 'ElseStatement'
+        };
+
+        this.addAttribute(elseDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        return elseDetails;
+    }
+
+    /** 
+    * Devuelve los atributos de las funciones registradas en el contexto.
+    * 
+    * @method getFunctionAttributes
+    * 
+    * @returns {Object} Un objeto que contiene los atributos de las funciones, con sus respectivos detalles y secuencia.
+    */
+    getFunctionAttributes() {
+        return this.functionAttributes;
+    }
+
+    /** 
+    * Reemplaza las declaraciones `LetDeclaration` que contienen expresiones de lambda en el cuerpo de la función
+    * con la secuencia de instrucciones adecuada para la lambda. Si el cuerpo de la lambda es una expresión binaria o 
+    * un bloque de sentencias, se procesa y reemplaza la declaración `LetDeclaration` con el cuerpo de la lambda.
+    * Además, guarda la secuencia de la función y el cuerpo de la lambda en los atributos de la función.
+    * 
+    * @method transformLetDeclarationsWithLambdas
+    * 
+    * @throws {Error} Si el cuerpo de la lambda no es reconocido o tiene un formato inesperado.
+    */
+    transformLetDeclarationsWithLambdas() {
+        console.log("Transformando LetDeclarations con Lambdas...");
+      
+        // Recorremos las funciones en el diccionario de funciones
+        for (const functionName in this.functionAttributes) {
+            const attributes = this.functionAttributes[functionName];
+            const secuencia = attributes.secuencia;
+    
+            // Recorremos la secuencia de la función principal
+            for (let i = 0; i &lt; secuencia.length; i++) {
+                const attr = secuencia[i];
+    
+                // Buscamos las LetDeclarations con LambdaExpressions
+                if (attr.type === 'LetDeclaration' &amp;&amp; attr.value &amp;&amp; Array.isArray(attr.value) &amp;&amp; attr.value[0][0]?.type === 'LambdaExpression') {
+                    const lambdaExpression = attr.value[0][0]; // La LambdaExpression
+                    
+                    console.log("Cuerpo de la lambda:", lambdaExpression.body); // Verificar la estructura del cuerpo
+                
+                    let functionBody;
+                
+                    if (lambdaExpression.body &amp;&amp; lambdaExpression.body.type === 'BinaryExpression') {
+                        // Si el cuerpo es una BinaryExpression, procesarlo correctamente
+                        functionBody = [{
+                            type: 'BinaryExpression',
+                            left: lambdaExpression.body.left,
+                            operator: lambdaExpression.body.operator,
+                            right: lambdaExpression.body.right
+                        }];
+                    } else if (lambdaExpression.body &amp;&amp; Array.isArray(lambdaExpression.body)) {
+                        // Si el cuerpo es un bloque de sentencias
+                        functionBody = lambdaExpression.body;
+                    } else {
+                        // Si no se reconoce el tipo del cuerpo
+                        throw new Error("Cuerpo de la lambda no reconocido");
+                    }
+                
+                    // Reemplazamos la LetDeclaration con el cuerpo de la lambda
+                    secuencia.splice(i, 1, ...functionBody);
+                
+                    // Guardamos la secuencia de la función como un diccionario separado
+                    if (!this.functionAttributes[attr.id]) {
+                        this.functionAttributes[attr.id] = this.initializeAttributes();
+                    }
+                
+                    // Guardamos el cuerpo de la lambda en la propiedad body
+                    this.functionAttributes[attr.id].secuencia = functionBody;
+                }
+            }
+        }
+    }
+
+    /** 
+    * Ejecuta la transformación de las declaraciones `LetDeclaration` con expresiones de lambda y luego
+    * recorre todas las funciones registradas, imprimiendo información sobre cada una de ellas.
+    * Para cada función, se muestra el nombre, el ID y la secuencia de instrucciones asociada.
+    * 
+    * @method getResults
+    */
+    getResults() {
+        this.transformLetDeclarationsWithLambdas();
+        for (const functionName in this.functionAttributes) {
+            const attributes = this.functionAttributes[functionName];
+            console.log(`Función: ${functionName}`);
+            console.log(`ID: ${attributes.id}`);
+            console.log("Secuencia:", JSON.stringify(attributes.secuencia, null, 2));
+            console.log("====================================");
+        }
+    }
+
+    /** 
+    * Devuelve los resultados procesados por el sistema.
+    * 
+    * @method getResultsCommander
+    * 
+    * @returns {Array} Un array que contiene los resultados procesados.
+    */
+    getResultsCommander() {
+        return this.results;
+    }
+}
+
+export default Loader;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Loader.html">Loader</a></li><li><a href="Transpiler.html">Transpiler</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addAttribute">addAttribute</a></li><li><a href="global.html#expression">expression</a></li><li><a href="global.html#generateCode">generateCode</a></li><li><a href="global.html#generateExpression">generateExpression</a></li><li><a href="global.html#generateStatement">generateStatement</a></li><li><a href="global.html#getFunctionAttributes">getFunctionAttributes</a></li><li><a href="global.html#getResults">getResults</a></li><li><a href="global.html#getResultsCommander">getResultsCommander</a></li><li><a href="global.html#getTranspiledCode">getTranspiledCode</a></li><li><a href="global.html#identifier">identifier</a></li><li><a href="global.html#initializeAttributes">initializeAttributes</a></li><li><a href="global.html#loadBinaryOperator">loadBinaryOperator</a></li><li><a href="global.html#loadComparisionOperator">loadComparisionOperator</a></li><li><a href="global.html#loadValue">loadValue</a></li><li><a href="global.html#loader">loader</a></li><li><a href="global.html#packman_int">packman_int</a></li><li><a href="global.html#packman_ws">packman_ws</a></li><li><a href="global.html#parameters">parameters</a></li><li><a href="global.html#parseBIESCode">parseBIESCode</a></li><li><a href="global.html#parser">parser</a></li><li><a href="global.html#program">program</a></li><li><a href="global.html#transformLetDeclarationsWithLambdas">transformLetDeclarationsWithLambdas</a></li><li><a href="global.html#transpile">transpile</a></li><li><a href="global.html#transpileComparisionExpression">transpileComparisionExpression</a></li><li><a href="global.html#transpileExpression">transpileExpression</a></li><li><a href="global.html#transpileFunctionCall">transpileFunctionCall</a></li><li><a href="global.html#transpileFunctionDeclaration">transpileFunctionDeclaration</a></li><li><a href="global.html#transpileValueDeclaration">transpileValueDeclaration</a></li><li><a href="global.html#transpiler">transpiler</a></li><li><a href="global.html#visit">visit</a></li><li><a href="global.html#visitAssignment">visitAssignment</a></li><li><a href="global.html#visitComparison">visitComparison</a></li><li><a href="global.html#visitConstDeclaration">visitConstDeclaration</a></li><li><a href="global.html#visitElseIfStatement">visitElseIfStatement</a></li><li><a href="global.html#visitElseStatement">visitElseStatement</a></li><li><a href="global.html#visitExpression">visitExpression</a></li><li><a href="global.html#visitExpressionStatement">visitExpressionStatement</a></li><li><a href="global.html#visitFunctionCall">visitFunctionCall</a></li><li><a href="global.html#visitFunctionDeclaration">visitFunctionDeclaration</a></li><li><a href="global.html#visitIfStatement">visitIfStatement</a></li><li><a href="global.html#visitLambdaExpression">visitLambdaExpression</a></li><li><a href="global.html#visitLetDeclaration">visitLetDeclaration</a></li><li><a href="global.html#visitPrintStatement">visitPrintStatement</a></li><li><a href="global.html#visitReturnStatement">visitReturnStatement</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Nov 15 2024 10:54:02 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
