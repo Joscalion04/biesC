@@ -46,13 +46,11 @@ printStatement: PRINT '(' argumentList? ')' ';'? ;
 
 parameterList: ID (',' ID)*;
 
-expression: assignment (( '+' | '-' ) assignment)*;
+expression: assignment (( '+' | '-' | '*' | '/' | '**' ) assignment)*;
 
-assignment: comparison ('=' comparison)* ;
+assignment: comparison ('=' comparison)?;
 
-comparison: term (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) term)?;
-
-term: factor (( '*' | '/' | '**' ) factor)*;
+comparison: factor (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) factor)?;
 
 factor: INT 
       | FLOAT
@@ -70,7 +68,11 @@ argumentList: expression (',' expression)*;
 
 block: '{' (statement)* '}';
 
-ifStatement: 'if' '(' expression ')' block (ELSE block)?;
+ifStatement: 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
+
+elseIfStatement: 'else' 'if' '(' expression ')' block;
+
+elseStatement: ELSE block;
 
 lambdaExpression: '(' parameterList? ')' '=>' (block | expression) ; 
 

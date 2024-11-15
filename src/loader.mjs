@@ -3,6 +3,7 @@ import biesGrammarVisitor from '../parser/biesVisitor.js';
 class Loader extends biesGrammarVisitor {
     constructor() {
         super();
+        this.functionId = 0;
         this.results = [];
         this.globalContext = 'main';
         this.currentFunction = this.globalContext;
@@ -12,6 +13,7 @@ class Loader extends biesGrammarVisitor {
 
     initializeAttributes() {
         return {
+            id: this.functionId++,
             secuencia: []
         };
     }
@@ -23,69 +25,57 @@ class Loader extends biesGrammarVisitor {
         this.results.push(details);
     }
 
-    visitFactor(ctx) {
-        if (ctx.INT()) {
-            return parseInt(ctx.INT().getText());
-        }
-        if (ctx.FLOAT()) {
-            return parseFloat(ctx.FLOAT().getText());
-        }
-        if (ctx.STRING()) {
-            return ctx.STRING().getText().slice(1, -1);
-        }
-        if (ctx.ID()) {
-            return ctx.ID().getText();
-        }
-        if (ctx.lambdaExpression()) {
-            return this.visit(ctx.lambdaExpression());
-        }
-        if (ctx.expression()) {
-            return this.visit(ctx.expression());
-        }
-        if (ctx.functionCall()) {
-            return this.visit(ctx.functionCall());
-        }
-        if (ctx.printStatement()) {
-            return this.visit(ctx.printStatement());
-        }
-        return null;
+    visitReturnStatement(ctx) {
+        const value = this.visit(ctx.expression());
+        const returnDetails = {
+            type: 'ReturnStatement',
+            value
+        };
+        this.addAttribute(returnDetails);
+        return returnDetails;
     }
 
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
+        
+        // Guardamos el valor original de processingLambda
+        const wasProcessingLambda = this.processingLambda;
+        this.processingLambda = true;
         const value = this.visit(ctx.expression());
-    
-        // Si el valor es una expresión lambda, la tratamos como una función
+        this.processingLambda = wasProcessingLambda;
+
+        // Si el valor es una lambda
         if (value && value.type === 'LambdaExpression') {
-            // Registrar la lambda como una función con sus parámetros y cuerpo
-            const lambdaFunction = {
+            // Registrar la lambda como una función
+            this.functionAttributes[id] = this.initializeAttributes();
+            
+            // Crear los detalles de la función
+            const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: id,
-                params: value.params,
-                body: value.body
+                params: value.params
             };
-    
-            // Registrar la función en el contexto actual
-            this.addAttribute(lambdaFunction);
-    
-            // Opcional: Registrar también la declaración `let` si es necesario
-            const letDetails = {
-                type: 'LetDeclaration',
-                id,
-                value: `Function ${id}` // Indicar que esta `let` apunta a una función
-            };
-            this.addAttribute(letDetails);
-    
-            // Retornar o manejar la función según sea necesario
-            return lambdaFunction;
+
+            // Añadir la declaración de función al contexto global
+            const prevFunction = this.currentFunction;
+            this.currentFunction = id;
+            this.addAttribute(functionDetails);
+
+            // Añadir el cuerpo de la lambda
+            if (value.body && value.body.type === 'PrintStatement') {
+                this.functionAttributes[id].secuencia.push(value.body);
+            }
+
+            // Restaurar el contexto
+            this.currentFunction = prevFunction;
         }
-    
-        // Si no es una lambda, procesarlo como una declaración `let` normal
+
         const letDetails = {
             type: 'LetDeclaration',
             id,
             value
         };
+
         this.addAttribute(letDetails);
         return letDetails;
     }
@@ -166,6 +156,118 @@ class Loader extends biesGrammarVisitor {
         return result;
     }
 
+    visitComparison(ctx) {
+        const factors = ctx.factor();
+        if (factors.length === 0) return null;
+
+        let result = this.visit(factors[0]);
+        
+        for (let i = 1; i < factors.length; i++) {
+            const operator = ctx.getChild(2 * i - 1).getText();
+            const factorValue = this.visit(factors[i]);
+            const comparisonDetails = {
+                type: 'ComparisionExpression',
+                left: result,
+                operator,
+                right: factorValue
+            };
+            this.addAttribute(comparisonDetails);
+            result = comparisonDetails;
+        }
+
+        return result;
+    }
+
+    // visitTerm(ctx) {
+    //     const factors = ctx.factor();
+    //     if (factors.length === 0) return null;
+
+    //     let result = this.visit(factors[0]);
+
+    //     for (let i = 1; i < factors.length; i++) {
+    //         const operator = ctx.getChild(2 * i - 1).getText();
+    //         const factorValue = this.visit(factors[i]);
+    //         const termDetails = {
+    //             type: 'TermExpression',
+    //             left: result,
+    //             operator,
+    //             right: factorValue
+    //         };
+    //         this.addAttribute(termDetails);
+    //         result = termDetails;
+    //     }
+
+    //     return result;
+    // }
+
+    visitFactor(ctx) {
+        if (ctx.INT()) {
+            return parseInt(ctx.INT().getText());
+        }
+        if (ctx.FLOAT()) {
+            return parseFloat(ctx.FLOAT().getText());
+        }
+        if (ctx.ID()) {
+            return ctx.ID().getText();
+        }
+        if (ctx.STRING()) {
+            return ctx.STRING().getText().slice(1, -1);
+        }
+        if (ctx.expression()) {
+            return this.visit(ctx.expression());
+        }
+        if (ctx.lambdaExpression()) {
+            return this.visit(ctx.lambdaExpression());
+        }
+        if (ctx.functionCall()) {
+            return this.visit(ctx.functionCall());
+        }
+        if (ctx.printStatement()) {
+            return this.visit(ctx.printStatement());
+        }
+        return null;
+    }
+
+    // Procesa operaciones de suma y resta (expression)
+    // visitExpression(ctx) {
+    //     let result = this.visit(ctx.term(0));
+
+    //     for (let i = 1; i < ctx.term().length; i++) {
+    //         const operator = ctx.getChild(2 * i - 1).getText();
+    //         const rightValue = this.visit(ctx.term(i));
+    //         const expressionDetails = {
+    //             type: 'BinaryExpression1',
+    //             left: result,
+    //             operator,
+    //             right: rightValue
+    //         };
+    //         this.addAttribute(expressionDetails);
+    //         result = expressionDetails;
+    //     }
+
+    //     return result;
+    // }
+
+    // Procesa operaciones de multiplicación y división (term)
+    // visitTerm(ctx) {
+    //     let result = this.visit(ctx.factor(0));
+
+    //     for (let i = 1; i < ctx.factor().length; i++) {
+    //         const operator = ctx.getChild(2 * i - 1).getText();
+    //         const rightValue = this.visit(ctx.factor(i));
+    //         const termDetails = {
+    //             type: 'BinaryExpression2',
+    //             left: result,
+    //             operator,
+    //             right: rightValue
+    //         };
+    //         // this.addAttribute(termDetails);
+    //         result = termDetails;
+    //     }
+
+    //     return result;
+    // }
+
     visitFunctionCall(ctx) {
         const functionName = ctx.ID().getText();
         let args = [];
@@ -232,6 +334,25 @@ class Loader extends biesGrammarVisitor {
         return functionDetails;
     }
 
+    visitExpressionStatement(ctx) {
+        const expression = this.visit(ctx.expression());
+        const expressionDetails = {
+            type: 'ExpressionStatement',
+            expression
+        };
+
+        this.addAttribute(expressionDetails);
+        return expressionDetails;
+    }
+
+    /*
+    ifStatement: 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
+
+    elseIfStatement: 'else' 'if' '(' expression ')' block;
+
+    elseStatement: ELSE block;
+*/
+
     visitIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
         const ifDetails = {
@@ -245,11 +366,45 @@ class Loader extends biesGrammarVisitor {
             this.visit(ctx.block());
         }
 
-        if (ctx.elseBlock) {
-            this.visit(ctx.elseBlock());
+        if (ctx.elseIfStatement()) {
+            this.visit(ctx.elseIfStatement());
+        }
+
+        if (ctx.elseStatement()) {
+            this.visit(ctx.elseStatement());
         }
 
         return ifDetails;
+    }
+    
+    visitElseIfStatement(ctx) {
+        const condition = this.visit(ctx.expression());
+        const elseIfDetails = {
+            type: 'ElseIfStatement',
+            condition
+        };
+
+        this.addAttribute(elseIfDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        return elseIfDetails;
+    }
+
+    visitElseStatement(ctx) {
+        const elseDetails = {
+            type: 'ElseStatement'
+        };
+
+        this.addAttribute(elseDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        return elseDetails;
     }
 
     getFunctionAttributes() {
@@ -306,13 +461,13 @@ class Loader extends biesGrammarVisitor {
             }
         }
     }
-    
 
     getResults() {
         this.transformLetDeclarationsWithLambdas();
         for (const functionName in this.functionAttributes) {
             const attributes = this.functionAttributes[functionName];
             console.log(`Función: ${functionName}`);
+            console.log(`ID: ${attributes.id}`);
             console.log("Secuencia:", JSON.stringify(attributes.secuencia, null, 2));
             console.log("====================================");
         }

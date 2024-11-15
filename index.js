@@ -1,6 +1,6 @@
 import parseBIESCode from './src/runner.mjs';
 
-parseBIESCode("./test/test_unitarios/test2.bies");
+parseBIESCode("./test/test_unitarios/test1.bies");
 
 import fs from 'fs'; // Importar el módulo fs para trabajar con archivos
 

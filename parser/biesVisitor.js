@@ -84,12 +84,6 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
-	// Visit a parse tree produced by biesParser#term.
-	visitTerm(ctx) {
-	  return this.visitChildren(ctx);
-	}
-
-
 	// Visit a parse tree produced by biesParser#factor.
 	visitFactor(ctx) {
 	  return this.visitChildren(ctx);
@@ -116,6 +110,18 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 
 	// Visit a parse tree produced by biesParser#ifStatement.
 	visitIfStatement(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#elseIfStatement.
+	visitElseIfStatement(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#elseStatement.
+	visitElseStatement(ctx) {
 	  return this.visitChildren(ctx);
 	}
 
