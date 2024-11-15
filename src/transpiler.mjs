@@ -234,12 +234,17 @@ class Transpiler {
     * @method transpileExpressionStatement
     * @param {Object} node El nodo que representa un ExpressionStatement.
     */
- transpileExpressionStatement(node) {
+    transpileExpressionStatement(node) {
     // Procesa la expresión contenida en el nodo
-    if (node.expression) {
-        this.transpileExpression(node.expression);
+    if (node.left && node.right) {
+        this.loadValue(node.left);
+        this.instructions.push(`OPR ${node.operator}`);
+        this.loadValue(node.right);
+    } else {
+        // Para valores literales o variables
+        this.instructions.push(`LDV ${node.value}`);
     }
-}
+    }
     /** 
     * Transforma una expresión en instrucciones correspondientes.
     * 
@@ -251,13 +256,23 @@ class Transpiler {
     * @param {Object} node El nodo que representa la expresión.
     */
     transpileExpression(node) {
-        if (node.left && node.right) {
-            this.loadValue(node.left);
-            this.loadValue(node.right);
+        if (node.type === 'BinaryExpression') {
+            // Procesa recursivamente la parte izquierda de la expresión
+            this.transpileExpression(node.left);
+    
+            // Procesa recursivamente la parte derecha de la expresión
+            this.transpileExpression(node.right);
+    
+            // Aplica el operador binario al resultado de los operandos
             this.loadBinaryOperator(node.operator);
+        } else if (node.type === 'Identifier') {
+            // Si es una variable, carga su valor
+            this.instructions.push(`LDV ${node.name}`);
+        } else if (typeof node === 'number' || typeof node === 'string') {
+            // Si es un valor literal, simplemente carga el valor
+            this.loadValue(node);
         } else {
-            // Para valores literales o variables
-            this.instructions.push(`LDV ${node.value}`);
+            throw new Error(`Tipo de nodo desconocido o no soportado: ${JSON.stringify(node)}`);
         }
     }
 
