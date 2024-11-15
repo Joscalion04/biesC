@@ -272,21 +272,41 @@ class Loader extends biesGrammarVisitor {
                 if (attr.type === 'LetDeclaration' && attr.value && Array.isArray(attr.value) && attr.value[0][0]?.type === 'LambdaExpression') {
                     const lambdaExpression = attr.value[0][0]; // La LambdaExpression
                     
-                    // La secuencia de la función será el cuerpo de la lambda
-                    const functionBody = lambdaExpression.body; // El cuerpo de la lambda (puede ser un bloque o expresión)
-    
-                    // Establecemos el cuerpo de la función en la secuencia
-                    secuencia.splice(i, 1, ...functionBody); // Reemplazamos la LetDeclaration con el cuerpo de la lambda
-    
-                    // Si no existe un contexto para la función, lo creamos
+                    console.log("Cuerpo de la lambda:", lambdaExpression.body); // Verificar la estructura del cuerpo
+                
+                    let functionBody;
+                
+                    if (lambdaExpression.body && lambdaExpression.body.type === 'BinaryExpression') {
+                        // Si el cuerpo es una BinaryExpression, procesarlo correctamente
+                        functionBody = [{
+                            type: 'BinaryExpression',
+                            left: lambdaExpression.body.left,
+                            operator: lambdaExpression.body.operator,
+                            right: lambdaExpression.body.right
+                        }];
+                    } else if (lambdaExpression.body && Array.isArray(lambdaExpression.body)) {
+                        // Si el cuerpo es un bloque de sentencias
+                        functionBody = lambdaExpression.body;
+                    } else {
+                        // Si no se reconoce el tipo del cuerpo
+                        throw new Error("Cuerpo de la lambda no reconocido");
+                    }
+                
+                    // Reemplazamos la LetDeclaration con el cuerpo de la lambda
+                    secuencia.splice(i, 1, ...functionBody);
+                
+                    // Guardamos la secuencia de la función como un diccionario separado
                     if (!this.functionAttributes[attr.id]) {
                         this.functionAttributes[attr.id] = this.initializeAttributes();
-                        this.functionAttributes[attr.id].secuencia = functionBody; // Guardamos el cuerpo como una propiedad de la función
                     }
+                
+                    // Guardamos el cuerpo de la lambda en la propiedad body
+                    this.functionAttributes[attr.id].secuencia = functionBody;
                 }
             }
         }
     }
+    
 
     getResults() {
         this.transformLetDeclarationsWithLambdas();
