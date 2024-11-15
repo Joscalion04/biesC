@@ -96,9 +96,10 @@ class Transpiler {
                 throw new Error(`Operador desconocido: ${operator}`);
         }
     }
-
+    
     transpileIfStatement(node) {
-    } 
+        
+    }
 
     transpileComparisionExpression(node) {
         this.loadValue(node.right);
