@@ -59,6 +59,8 @@ class Transpiler {
                     this.transpileComparisionExpression(attributes[i]);
                 } else if (attributes[i].type === 'IfStatement') {
                     this.transpileIfStatement(attributes[i]);
+                } else if (attributes[i].type === 'PrintStatement') {
+                    this.transpilePrintStatement(attributes[i]); // Manejo de PrintStatement
                 }
 
                 // if (attributes[i].type === 'FunctionDeclaration') {
@@ -164,17 +166,17 @@ class Transpiler {
     transpileIfStatement(node) {
         
     }
-
-    /** 
-    * Transforma una expresión de comparación en instrucciones correspondientes.
-    * 
-    * Este método carga los valores de la parte derecha e izquierda de una expresión de comparación y luego carga el operador
-    * de comparación correspondiente. Las instrucciones generadas son añadidas a la lista de instrucciones para la máquina virtual.
-    * 
-    * @method transpileComparisionExpression
-    * 
-    * @param {Object} node El nodo que representa una expresión de comparación. Debe tener las propiedades `left`, `right`, y `operator`.
-    */
+    
+    transpilePrintStatement(node) {
+        // Iterar sobre los argumentos del PrintStatement
+        node.args.forEach(arg => {
+            this.loadValue(arg); // Cargar el valor del argumento en la pila
+        });
+    
+        // Emitir la instrucción de impresión
+        this.instructions.push('PRN'); // Comando para imprimir
+    }
+    
     transpileComparisionExpression(node) {
         this.loadValue(node.right);
         this.loadValue(node.left);
