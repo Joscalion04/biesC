@@ -95,7 +95,7 @@ class Transpiler {
         } else if (typeof value === 'string') {
             this.instructions.push(`LDV "${value}"`);
         } else if (typeof value === 'object') {
-            this.instructions.push(`LDV ${value.body.args[0]}`);
+            this.instructions.push(`LDV ${value.functionName}`);
            
            
         }
@@ -255,7 +255,7 @@ class Transpiler {
     * @method transpileFunctionCall
     * @param {Object} node El nodo que representa la llamada a la función.
     */
-    transpileFunctionCall(node) {
+    transpileFunctionCall(node, functionName) {
         console.log('=============================================');
         console.log(node);
         console.log('Argumentos: ', node.args);
