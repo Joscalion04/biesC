@@ -1,7 +1,24 @@
 import fs from 'fs';
 import readline from 'readline';
 
-// Elimina espacios en blanco al inicio de una cadena
+/**
+* Clase que representa un árbol de sintaxis abstracta (AST) para el lenguaje BiesC.
+* @author Manuel Mora Sandi 
+* @author Derek Rojas Mendoza
+* @author Josué Vindas Pérez
+* @author Joseph León Cabezas
+*/
+
+/** 
+* Elimina los espacios en blanco al principio de la cadena de texto. 
+* Este método recibe una cadena de texto y elimina todos los espacios en blanco 
+* al inicio de la misma. El proceso continúa hasta que se encuentra con un 
+* carácter no espacial o hasta que se alcanza el final de la cadena.
+* 
+* @method packman_ws
+* @param {string} input - La cadena de texto de entrada que puede contener espacios en blanco al principio.
+* @returns {string} La cadena de texto resultante después de eliminar los espacios iniciales.
+*/
 function packman_ws(input) {
     let i = 0;
     while (i < input.length && input[i] === ' ') {
@@ -10,7 +27,17 @@ function packman_ws(input) {
     return input.slice(i);
 }
 
-// Separa los dígitos iniciales en la cadena
+/** 
+* Extrae el primer número entero al inicio de una cadena de texto.
+* Este método recibe una cadena de texto y extrae el primer número entero 
+* que se encuentra al principio de la cadena. El número puede estar compuesto 
+* solo por dígitos (sin espacios). 
+*  @method packman_int
+* @param {string} input - La cadena de texto de entrada que puede contener un número al principio.
+* @returns {Array} Un arreglo con dos elementos:
+*   - El primer elemento es el número entero extraído (como cadena).
+*   - El segundo elemento es el resto de la cadena después del número.
+*/
 function packman_int(input) {
     let i = 0;
     while (i < input.length && /\d/.test(input[i])) {
@@ -19,13 +46,34 @@ function packman_int(input) {
     return [input.slice(0, i), input.slice(i)];
 }
 
-// Lee el archivo y genera un árbol de sintaxis
+/** 
+ * Lee el contenido de un archivo y lo procesa mediante un analizador sintáctico.
+ * Este método recibe el nombre de un archivo, lee su contenido en formato de texto 
+ * y lo pasa a través de un analizador sintáctico (presumiblemente la función 
+ * `program`) para procesarlo. 
+ * 
+ * @method parser
+ * @param {string} filename - El nombre del archivo que contiene el contenido a analizar.
+ * @throws {Error} Si ocurre un error al leer el archivo o procesar el contenido.
+ */
 function parser(filename) {
     const content = fs.readFileSync(filename, 'utf8');
     return program(content);
 }
 
-// Analiza el programa completo
+/** 
+* Procesa una cadena de entrada, extrayendo expresiones y construyendo un programa.
+* Este método toma una cadena de texto como entrada, limpia los espacios en blanco 
+* al principio, y luego procesa las expresiones que contiene. Cada expresión se extrae 
+* utilizando la función `expression` y se almacena en un array de expresiones. 
+* Al final, se devuelve un objeto que representa un programa con el tipo `program` 
+* y las expresiones que ha encontrado.
+* 
+* @method program
+* @param {string} input - La cadena de texto que contiene el código a procesar.
+* @returns {Object} Un objeto que representa un programa, con el tipo `program` y un array de expresiones extraídas.
+* @throws {Error} Si ocurre un error durante el análisis de las expresiones.
+*/
 function program(input) {
     input = packman_ws(input);
     const expressions = [];
@@ -37,7 +85,17 @@ function program(input) {
     return { type: 'program', expressions };
 }
 
-// Analiza una expresión
+/** 
+* Procesa una cadena de entrada, extrayendo expresiones y construyendo un programa.
+* Este método toma una cadena de texto como entrada, limpia los espacios en blanco 
+* al principio, y luego procesa las expresiones que contiene. Cada expresión se extrae 
+* utilizando la función `expression` y se almacena en un array de expresiones.
+* 
+* @method program
+* @param {string} input - La cadena de texto que contiene el código a procesar.
+* @returns {Object} Un objeto que representa un programa, con el tipo `program` y un array de expresiones extraídas.
+* @throws {Error} Si ocurre un error durante el análisis de las expresiones.
+*/
 function expression(input) {
     if (!input || input.trim().length === 0) {
         throw new Error(`Unexpected empty expression.`);
@@ -110,7 +168,23 @@ function expression(input) {
     throw new Error(`Invalid expression, found: ${input}`);
 }
 
-// Función que maneja la asignación de funciones y valores
+/** 
+* Analiza una expresión en la cadena de entrada y devuelve una representación estructurada de la expresión.
+* Este método procesa el input para reconocer diferentes tipos de expresiones, tales como:
+* - Declaraciones `let` con valores asignados, incluyendo funciones flecha.
+* - Números enteros.
+* - Expresiones de función flecha.
+* - Cadenas de texto.
+* - Llamadas a funciones como `print`.
+* - Identificadores (variables).
+* 
+* @method expression
+* @param {string} input - La cadena de texto que contiene la expresión a analizar.
+* @returns {Object} Un arreglo que contiene un objeto representando la expresión analizada y el resto del input no procesado.
+*     - El objeto de la expresión puede tener los siguientes tipos: `let`, `num`, `arrow`, `str`, `call`, `id`.
+*     - El segundo valor es el input restante después de procesar la expresión.
+* @throws {Error} Si se encuentra una expresión vacía o un formato no reconocido. 
+*/
 function parseAssignment(input) {
     const assignmentPattern = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*)/;
     const match = assignmentPattern.exec(input);
@@ -123,7 +197,21 @@ function parseAssignment(input) {
     return null;
 }
 
-// Función identifier mejorada
+/** 
+ * Analiza la cadena de entrada para identificar un identificador o una asignación.
+ * Este método primero intenta detectar una asignación utilizando `parseAssignment`. Si no se encuentra una asignación,
+ * entonces busca un identificador válido que siga las reglas de nomenclatura estándar para variables en JavaScript (debe comenzar
+ * con una letra o guión bajo, seguido de letras, números o guiones bajos).
+ * 
+ * @method identifier
+ * @param {string} input - La cadena de texto que contiene el posible identificador o asignación.
+ * @returns {Array} Un arreglo con dos elementos:
+ *   - El primer elemento es el identificador encontrado (como una cadena).
+ *   - El segundo elemento es el resto de la cadena de entrada después de haber extraído el identificador.
+ *   Si no se encuentra un identificador válido, se lanza un error.
+ * 
+ * @throws {Error} Si el identificador es inválido o no se puede procesar correctamente.
+ */
 function identifier(input) {
     if (!input || input.trim() === '') {
         console.log("Skipping empty or whitespace line.");
@@ -147,7 +235,20 @@ function identifier(input) {
     }
 }
 
-// Analiza los parámetros de una función
+/** 
+* Analiza los parámetros de una función en una cadena de entrada.
+* Este método extrae una lista de parámetros separados por comas de una cadena de texto que representa la declaración de los
+* parámetros de una función. El proceso se detiene cuando se encuentra el cierre de los paréntesis `)` o si se detecta un error
+* en la estructura de los parámetros.
+* 
+* @method parameters
+* @param {string} input - La cadena de texto que contiene los parámetros de la función entre paréntesis.
+* @returns {Array} Un arreglo con dos elementos:
+*   - El primer elemento es un arreglo de los parámetros de la función (cada parámetro es un identificador como cadena).
+*   - El segundo elemento es el resto de la cadena después de los parámetros (normalmente comenzará después del paréntesis de cierre).
+* 
+* @throws {Error} Si no se encuentra el paréntesis de cierre `)` después de los parámetros o si la cadena tiene una estructura incorrecta.
+*/
 function parameters(input) {
     const params = [];
     while (input.length > 0 && input[0] !== ')') {
@@ -164,12 +265,30 @@ function parameters(input) {
     throw new Error(`Expected ')' after parameters, found: ${input}`);
 }
 
-// Generador de código para el AST
+/** 
+* Genera el código a partir de un árbol de sintaxis abstracta (AST).
+* Este método recorre las declaraciones dentro de un AST y las pasa a una función encargada de generar el código correspondiente
+* para cada una de las instrucciones encontradas. Cada declaración se procesa y se escribe en un flujo de salida especificado.
+* 
+* @method generateCode
+* @param {Object} ast - El árbol de sintaxis abstracta que contiene las declaraciones y expresiones.
+* @param {Object} stream - El flujo de salida donde se escribirá el código generado (puede ser un archivo, consola, etc.).
+*/
 function generateCode(ast, stream) {
     ast.statements.forEach(statement => generateStatement(statement, stream));
 }
 
-// Generador de declaraciones en el AST
+/** 
+ * Genera el código correspondiente a una declaración dentro de un flujo de salida.
+ * Este método procesa una declaración de tipo `let` o `call`, generando el código adecuado 
+ * para cada tipo y escribiéndolo en el flujo de salida proporcionado. Si la declaración es de tipo `let`, 
+ * se genera una asignación de variable. Si es una llamada de función (`call`), se genera el código para 
+ * la invocación de la función, como `print()` u otras funciones definidas en el código.
+ * 
+ * @method generateStatement
+ * @param {Object} statement - La declaración que debe ser procesada, con al menos una propiedad `type` que especifica el tipo de declaración.
+ * @param {Object} stream - El flujo de salida donde se escribirá el código generado (puede ser un archivo, consola, etc.).
+ */
 function generateStatement(statement, stream) {
     switch (statement.type) {   //switch para los tipos de declaraciones                           
         case 'let':
@@ -194,7 +313,16 @@ function generateStatement(statement, stream) {
     }
 }
 
-// Generador de expresiones en el AST
+/** 
+* Genera el código correspondiente a una expresión dentro de un flujo de salida.
+* Este método procesa diferentes tipos de expresiones (como funciones de flecha, expresiones matemáticas, 
+* identificadores, números, cadenas, concatenaciones y llamadas a funciones) y genera el código adecuado 
+* para cada tipo de expresión. El código generado se escribe en el flujo de salida proporcionado.
+* 
+* @method generateExpression
+* @param {Object} expr - La expresión que debe ser procesada. Puede ser de varios tipos
+* @param {Object} stream - El flujo de salida donde se escribirá el código generado (puede ser un archivo, consola, etc.).
+*/
 function generateExpression(expr, stream) {
     switch (expr.type) {
         case 'arrow':
@@ -235,7 +363,7 @@ function generateExpression(expr, stream) {
     }
 }
 
-// Función principal para generar el archivo de salida
+// ejemplo de uso
 function versionCompleja3(outputFileName) {
     const ast = {
         statements: [
@@ -253,6 +381,7 @@ function versionCompleja3(outputFileName) {
     console.log(`Código generado en el archivo ${outputFileName}`);
 }
 
+// ejemplo de uso
 function versionCompleja0(outputFileName) {
     const ast = {
         statements: [

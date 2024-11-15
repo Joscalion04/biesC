@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: runner.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: runner.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import fs from 'fs';
+import antlr4 from 'antlr4';
+import Loader from "./loader.mjs";
+import biesGrammarLexer from '../parser/biesLexer.js';
+import biesGrammarParser from '../parser/biesParser.js';
+import Transpiler from './transpiler.mjs';
+
+/**
+* Funciones que se encarga de leer un archivo de código fuente BIES, tokenizarlo,
+* tambien se encarga de construir el árbol de sintaxis abstracta (AST) y de
+* recorrerlo para obtener los atributos de las funciones y variables.
+* 
+* @author Manuel Mora Sandi 
+* @author Derek Rojas Mendoza
+* @author Josué Vindas Pérez
+* @author Joseph León Cabezas
+*/
+
+function parseBIESCode(inputFile) {
+  /**
+  * Contenido del archivo leído como una cadena.
+  * @type {string}
+  */
+  const input = fs.readFileSync(inputFile, 'utf-8');
+
+  // De archivo a stream de caracteres.
+  const chars = new antlr4.InputStream(input);
+
+  /**
+  * Instancia del lexer para procesar los caracteres del archivo.
+  * @type {biesGrammarLexer}
+  */
+  const lexer = new biesGrammarLexer(chars);
+
+  // Tokeniza el flujo de caracteres.
+  const tokens = new antlr4.CommonTokenStream(lexer);
+
+  /**
+  * Instancia del parser que genera el árbol de sintaxis abstracta (AST).
+  * @type {biesGrammarParser}
+  */
+  const parser = new biesGrammarParser(tokens);
+
+  // Construye el AST.
+  parser.buildParseTrees = true;
+
+  /**
+  * El árbol sintáctico resultante después del análisis.
+  * @type {ParseTree}
+  */
+  const AST = parser.program();
+
+  /**
+  * Crea una instancia del visitor `Loader`.
+  * 
+  * Esta instancia se utiliza para recorrer el AST y gestionar las instrucciones en la máquina virtual.
+  * 
+  * @constant {Loader} loader - Instancia del visitor personalizado.
+  */
+  const loader = new Loader();
+
+  /**
+  * Este método llama al visitor `Loader` para procesar cada nodo del AST 
+  * y ejecutar las instrucciones correspondientes en la máquina virtual (BiesVM).
+  * @method visit
+  * @param {Object} AST - El árbol de sintaxis abstracta que representa el programa 
+  *                       parseado por el analizador sintáctico.
+  * @returns {void} No retorna ningún valor; el resultado del recorrido se almacena y ejecuta en el contexto del visitor.
+  */
+  loader.visit(AST);
+
+  // Muestra los resultados procesados por el loader (atributos)
+  console.log("Atributos procesados por Loader:");
+  //  loader.getResults();  // Muestra el resultado final
+
+  /**
+  * Crea una instancia del transpiler `Transpiler`.
+  * El transpiler se encarga de convertir las funciones obtenidas del visitor en un formato deseado.
+  * @constant {Transpiler} transpiler - Instancia del transpiler.
+  */
+  const transpiler = new Transpiler();
+
+  /**
+  * Transpila las funciones obtenidas desde el visitor `Loader`.
+  * Llama al método `transpile` para procesar los atributos de las funciones definidos en el AST.
+  * @method transpile
+  * @param {Array&lt;Object>} functionAttributes - Atributos de las funciones a transpilar.
+  */
+  transpiler.transpile(loader.getFunctionAttributes());
+  //  console.log(transpiler.getTranspiledCode());
+
+ /**
+ * Obtiene los resultados del comando ejecutado por el cargador (loader).
+ * Que pueden incluir datos o resultados de una operación anterior.
+ * @returns {any} Los resultados obtenidos del comando ejecutado.
+ */
+  return loader.getResultsCommander();
+}
+
+export default parseBIESCode;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Loader.html">Loader</a></li><li><a href="Transpiler.html">Transpiler</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addAttribute">addAttribute</a></li><li><a href="global.html#expression">expression</a></li><li><a href="global.html#generateCode">generateCode</a></li><li><a href="global.html#generateExpression">generateExpression</a></li><li><a href="global.html#generateStatement">generateStatement</a></li><li><a href="global.html#getFunctionAttributes">getFunctionAttributes</a></li><li><a href="global.html#getResults">getResults</a></li><li><a href="global.html#getResultsCommander">getResultsCommander</a></li><li><a href="global.html#getTranspiledCode">getTranspiledCode</a></li><li><a href="global.html#identifier">identifier</a></li><li><a href="global.html#initializeAttributes">initializeAttributes</a></li><li><a href="global.html#loadBinaryOperator">loadBinaryOperator</a></li><li><a href="global.html#loadComparisionOperator">loadComparisionOperator</a></li><li><a href="global.html#loadValue">loadValue</a></li><li><a href="global.html#loader">loader</a></li><li><a href="global.html#packman_int">packman_int</a></li><li><a href="global.html#packman_ws">packman_ws</a></li><li><a href="global.html#parameters">parameters</a></li><li><a href="global.html#parseBIESCode">parseBIESCode</a></li><li><a href="global.html#parser">parser</a></li><li><a href="global.html#program">program</a></li><li><a href="global.html#transformLetDeclarationsWithLambdas">transformLetDeclarationsWithLambdas</a></li><li><a href="global.html#transpile">transpile</a></li><li><a href="global.html#transpileComparisionExpression">transpileComparisionExpression</a></li><li><a href="global.html#transpileExpression">transpileExpression</a></li><li><a href="global.html#transpileFunctionCall">transpileFunctionCall</a></li><li><a href="global.html#transpileFunctionDeclaration">transpileFunctionDeclaration</a></li><li><a href="global.html#transpileValueDeclaration">transpileValueDeclaration</a></li><li><a href="global.html#transpiler">transpiler</a></li><li><a href="global.html#visit">visit</a></li><li><a href="global.html#visitAssignment">visitAssignment</a></li><li><a href="global.html#visitComparison">visitComparison</a></li><li><a href="global.html#visitConstDeclaration">visitConstDeclaration</a></li><li><a href="global.html#visitElseIfStatement">visitElseIfStatement</a></li><li><a href="global.html#visitElseStatement">visitElseStatement</a></li><li><a href="global.html#visitExpression">visitExpression</a></li><li><a href="global.html#visitExpressionStatement">visitExpressionStatement</a></li><li><a href="global.html#visitFunctionCall">visitFunctionCall</a></li><li><a href="global.html#visitFunctionDeclaration">visitFunctionDeclaration</a></li><li><a href="global.html#visitIfStatement">visitIfStatement</a></li><li><a href="global.html#visitLambdaExpression">visitLambdaExpression</a></li><li><a href="global.html#visitLetDeclaration">visitLetDeclaration</a></li><li><a href="global.html#visitPrintStatement">visitPrintStatement</a></li><li><a href="global.html#visitReturnStatement">visitReturnStatement</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Nov 15 2024 10:54:02 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

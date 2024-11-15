@@ -1,6 +1,25 @@
 import biesGrammarVisitor from '../parser/biesVisitor.js';
 
+/**
+* Clase Loader que extiende de biesGrammarVisitor y se encarga de cargar los detalles de las instrucciones
+* del código fuente de BIES. Esta clase se encarga de recorrer el árbol de análisis sintáctico generado por
+* ANTLR y extraer los detalles de las instrucciones del código fuente.
+* 
+* @author Manuel Mora Sandi 
+* @author Derek Rojas Mendoza
+* @author Josué Vindas Pérez
+* @author Joseph León Cabezas
+*/
 class Loader extends biesGrammarVisitor {
+    /**
+    * Constructor de la clase Loader. 
+    * @constructor
+    * @param {string} functionId - Identificador de la función
+    * @param {object} results - el resultado de la ejecución
+    * @param {object} globalContext - Contexto global de la función
+    * @param {object} currentFunction - Función actual en ejecución
+    * @param {object} functionAttributes - Atributos de la función
+    */
     constructor() {
         super();
         this.functionId = 0;
@@ -11,6 +30,15 @@ class Loader extends biesGrammarVisitor {
         this.functionAttributes[this.globalContext] = this.initializeAttributes();
     }
 
+    /** 
+     * Inicializa los atributos para una nueva función o contexto, asignando un ID único 
+     * y una secuencia vacía.
+     * @method initializeAttributes
+     * 
+     * @returns {Object} Un objeto con un ID único y una secuencia vacía.
+     * @returns {number} return.id El identificador único de la función o contexto.
+     * @returns {Array} return.secuencia Una secuencia vacía, lista para almacenar valores.
+     */
     initializeAttributes() {
         return {
             id: this.functionId++,
@@ -18,6 +46,15 @@ class Loader extends biesGrammarVisitor {
         };
     }
 
+    /** 
+    * Agrega un nuevo atributo a la secuencia de la función actual y a los resultados globales.
+    * Este método verifica si hay una función actual y, si es así, agrega los detalles a su secuencia.
+    * 
+    * @method addAttribute
+    * 
+    * @param {Object} details Los detalles del atributo que se agregan a la secuencia y a los resultados.
+    * @returns {void} Este método no devuelve ningún valor.
+    */
     addAttribute(details) {
         if (this.currentFunction && this.functionAttributes[this.currentFunction]) {
             this.functionAttributes[this.currentFunction].secuencia.push(details);
@@ -25,6 +62,15 @@ class Loader extends biesGrammarVisitor {
         this.results.push(details);
     }
 
+    /** 
+    * Procesa una declaración de retorno en una expresión y agrega los detalles de la declaración 
+    * de retorno a los atributos de la función actual y a los resultados globales.
+    * 
+    * @method visitReturnStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración de retorno, que contiene la expresión a retornar.
+    * @returns {Object} Un objeto que representa la declaración de retorno, con el tipo y el valor de la expresión.
+    */
     visitReturnStatement(ctx) {
         const value = this.visit(ctx.expression());
         const returnDetails = {
@@ -35,6 +81,17 @@ class Loader extends biesGrammarVisitor {
         return returnDetails;
     }
 
+    /** 
+    * Procesa una declaración `let`, evaluando su expresión y manejando el caso donde la 
+    * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
+    * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración `let` 
+    * en los atributos de la función actual y los resultados globales.
+    * 
+    * @method visitLetDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración `let`, que contiene el identificador y la expresión a evaluar.
+    * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
+    */
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
         
@@ -80,6 +137,19 @@ class Loader extends biesGrammarVisitor {
         return letDetails;
     }
 
+    /** 
+    * Procesa una expresión de tipo `Lambda`, extrayendo sus parámetros y cuerpo. 
+    * Si la expresión tiene un bloque de instrucciones, las procesa, de lo contrario, 
+    * evalúa la expresión. Retorna un objeto que representa la lambda con su tipo, 
+    * parámetros y cuerpo.
+    * 
+    * @method visitLambdaExpression
+    * 
+    * @param {Object} ctx El contexto de la expresión lambda, que contiene los parámetros y el cuerpo de la lambda.
+    * @returns {Object} Un objeto que representa la expresión lambda, con el tipo, los parámetros y el cuerpo.
+    * @returns {string[]} return.params Los parámetros de la lambda.
+    * @returns {Array|Object} return.body El cuerpo de la lambda, que puede ser un array de instrucciones o una expresión.
+    */
     visitLambdaExpression(ctx) {
         const params = ctx.parameterList()
             ? ctx.parameterList().ID().map(param => param.getText())
@@ -99,6 +169,17 @@ class Loader extends biesGrammarVisitor {
         };
     }
 
+    /** 
+    * Procesa una declaración de constante `const`, evaluando su expresión y registrando los detalles
+    * de la constante en los atributos de la función actual y en los resultados globales.
+    * Este método obtiene el identificador y el valor de la constante, y los guarda como parte
+    * de la declaración de constante.
+    * 
+    * @method visitConstDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración `const`, que contiene el identificador y la expresión de la constante.
+    * @returns {Object} Un objeto que representa la declaración `const`, con el tipo, el identificador y el valor evaluado.
+    */
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
         const value = this.visit(ctx.expression());
@@ -112,6 +193,21 @@ class Loader extends biesGrammarVisitor {
         return constDetails;
     }
 
+    /** 
+    * Procesa una expresión que puede contener múltiples asignaciones, evaluando cada una de ellas
+    * y construyendo una expresión binaria que las combine. Si hay más de una asignación, se genera
+    * una expresión binaria para cada par de asignaciones sucesivas, usando el operador entre ellas.
+    * 
+    * @method visitExpression
+    * 
+    * @param {Object} ctx El contexto de la expresión, que contiene una lista de asignaciones.
+    * @returns {Object|null} Una expresión binaria que representa el resultado de evaluar las asignaciones,
+    * o `null` si no hay asignaciones.
+    * @returns {Object} return.type El tipo de la expresión, que será siempre `BinaryExpression` en el caso de múltiples asignaciones.
+    * @returns {Object} return.left El resultado de la primera asignación o expresión.
+    * @returns {string} return.operator El operador entre las asignaciones.
+    * @returns {Object} return.right El valor de la asignación siguiente en la expresión binaria.
+    */
     visitExpression(ctx) {
         const assignments = ctx.assignment();
         if (assignments.length === 0) return null;
@@ -134,6 +230,21 @@ class Loader extends biesGrammarVisitor {
         return result;
     }
 
+    /** 
+    * Procesa una asignación que puede contener múltiples comparaciones, evaluando cada una de ellas
+    * y construyendo una expresión de asignación que las combine. Si hay más de una comparación, 
+    * se genera una expresión de asignación para cada par de comparaciones sucesivas, usando el operador entre ellas.
+    * 
+    * @method visitAssignment
+    * 
+    * @param {Object} ctx El contexto de la asignación, que contiene una lista de comparaciones.
+    * @returns {Object|null} Una expresión de asignación que representa el resultado de evaluar las comparaciones,
+    * o `null` si no hay comparaciones.
+    * @returns {Object} return.type El tipo de la expresión, que será siempre `AssignmentExpression` en el caso de múltiples comparaciones.
+    * @returns {Object} return.left El resultado de la primera comparación o expresión.
+    * @returns {string} return.operator El operador entre las comparaciones.
+    * @returns {Object} return.right El valor de la comparación siguiente en la expresión de asignación.
+    */
     visitAssignment(ctx) {
         const comparisons = ctx.comparison();
         if (comparisons.length === 0) return null;
@@ -200,6 +311,20 @@ class Loader extends biesGrammarVisitor {
     //     return result;
     // }
 
+    /** 
+    * Procesa una comparación que puede contener múltiples factores, evaluando cada uno de ellos
+    * y construyendo una expresión de comparación que los combine. Si hay más de un factor, se genera
+    * una expresión de comparación para cada par de factores sucesivos, usando el operador entre ellos.
+    * 
+    * @method visitComparison
+    * 
+    * @param {Object} ctx El contexto de la comparación, que contiene una lista de factores.
+    * @returns {Object|null} Una expresión de comparación que representa el resultado de evaluar los factores, o `null` si no hay factores.
+    * @returns {Object} return.type El tipo de la expresión, que será siempre `ComparisionExpression` (nota: se podría corregir la ortografía a `ComparisonExpression`).
+    * @returns {Object} return.left El resultado del primer factor o expresión.
+    * @returns {string} return.operator El operador entre los factores.
+    * @returns {Object} return.right El valor del siguiente factor en la expresión de comparación.
+    */
     visitFactor(ctx) {
         if (ctx.INT()) {
             return parseInt(ctx.INT().getText());
@@ -268,6 +393,18 @@ class Loader extends biesGrammarVisitor {
     //     return result;
     // }
 
+    /** 
+    * Procesa una llamada a función, extrayendo el nombre de la función y los argumentos que le son pasados.
+    * Si la llamada contiene argumentos, estos son evaluados y almacenados en un array.
+    * Los detalles de la llamada a la función se registran en los atributos de la función actual y en los resultados globales.
+    * 
+    * @method visitFunctionCall
+    * 
+    * @param {Object} ctx El contexto de la llamada a función, que contiene el identificador de la función y la lista de argumentos.
+    * @returns {Object} Un objeto que representa la llamada a la función, con el tipo, el nombre de la función y los argumentos evaluados.
+    * @returns {string} return.functionName El nombre de la función llamada.
+    * @returns {Array} return.args Una lista de los argumentos evaluados para la llamada a la función.
+    */
     visitFunctionCall(ctx) {
         const functionName = ctx.ID().getText();
         let args = [];
@@ -286,6 +423,17 @@ class Loader extends biesGrammarVisitor {
         return functionCallDetails;
     }
 
+    /** 
+    * Procesa una declaración `print`, extrayendo y evaluando los argumentos que se pasan a la función `print`.
+    * Los argumentos se almacenan en un array y se registra la declaración de impresión en los atributos de la función
+    * actual solo si no estamos dentro de una lambda. 
+    * 
+    * @method visitPrintStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `print`, que contiene una lista de los argumentos a imprimir.
+    * @returns {Object} Un objeto que representa la declaración de impresión, con el tipo y los argumentos evaluados.
+    * @returns {Array} return.args Una lista de los argumentos que se pasarán a la función `print`, que pueden ser expresiones evaluadas.
+    */
     visitPrintStatement(ctx) {
         const args = ctx.argumentList() 
             ? ctx.argumentList().expression().map(expr => this.visit(expr))
@@ -304,6 +452,19 @@ class Loader extends biesGrammarVisitor {
         return printDetails;
     }
 
+    /** 
+    * Procesa una declaración de función, extrayendo el nombre de la función y sus parámetros.
+    * Si la declaración incluye un bloque de instrucciones, se visita dicho bloque. Además, se registra
+    * la declaración de la función en el contexto actual y, si es necesario, se crea un nuevo contexto para la función.
+    * 
+    * @method visitFunctionDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración de la función, que contiene el identificador de la función
+    * y la lista de parámetros.
+    * @returns {Object} Un objeto que representa la declaración de la función, con el tipo, el nombre y los parámetros.
+    * @returns {string} return.name El nombre de la función declarada.
+    * @returns {Array} return.params Los parámetros de la función, extraídos del contexto de la declaración.
+    */
     visitFunctionDeclaration(ctx) {
         const functionName = ctx.ID().getText();
         const params = ctx.parameterList() 
@@ -334,6 +495,16 @@ class Loader extends biesGrammarVisitor {
         return functionDetails;
     }
 
+    /** 
+    * Procesa una declaración de expresión, evaluando la expresión contenida en la declaración y registrando
+    * los detalles de la expresión en los atributos de la función actual.
+    * 
+    * @method visitExpressionStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración de expresión, que contiene la expresión que se va a evaluar.
+    * @returns {Object} Un objeto que representa la declaración de expresión, con el tipo y la expresión evaluada.
+    * @returns {Object} return.expression El valor de la expresión evaluada.
+    */
     visitExpressionStatement(ctx) {
         const expression = this.visit(ctx.expression());
         const expressionDetails = {
@@ -351,8 +522,19 @@ class Loader extends biesGrammarVisitor {
     elseIfStatement: 'else' 'if' '(' expression ')' block;
 
     elseStatement: ELSE block;
-*/
+    */
 
+    /** 
+    * Procesa una declaración `if`, evaluando la condición y registrando los detalles de la declaración `if`.
+    * Si la declaración `if` tiene un bloque de instrucciones, se visita ese bloque. Además, si existen declaraciones
+    * `else if` o `else`, también se procesan.
+    * 
+    * @method visitIfStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `if`, que contiene la condición y los posibles bloques `if`, `else if`, y `else`.
+    * @returns {Object} Un objeto que representa la declaración `if`, con el tipo y la condición evaluada.
+    * @returns {Object} return.condition El valor de la condición evaluada en la declaración `if`.
+    */
     visitIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
         const ifDetails = {
@@ -377,6 +559,16 @@ class Loader extends biesGrammarVisitor {
         return ifDetails;
     }
     
+    /** 
+    * Procesa una declaración `else if`, evaluando la condición y registrando los detalles de la declaración `else if`.
+    * Si la declaración `else if` tiene un bloque de instrucciones, se visita ese bloque.
+    * 
+    * @method visitElseIfStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `else if`, que contiene la condición y el bloque de instrucciones asociado.
+    * @returns {Object} Un objeto que representa la declaración `else if`, con el tipo y la condición evaluada.
+    * @returns {Object} return.condition El valor de la condición evaluada en la declaración `else if`.
+    */
     visitElseIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
         const elseIfDetails = {
@@ -393,6 +585,15 @@ class Loader extends biesGrammarVisitor {
         return elseIfDetails;
     }
 
+    /** 
+    * Procesa una declaración `else` y registra los detalles de la declaración `else`.
+    * Si la declaración `else` tiene un bloque de instrucciones, se visita ese bloque.
+    * 
+    * @method visitElseStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración `else`, que puede contener un bloque de instrucciones asociado.
+    * @returns {Object} Un objeto que representa la declaración `else`, con el tipo `ElseStatement`.
+    */
     visitElseStatement(ctx) {
         const elseDetails = {
             type: 'ElseStatement'
@@ -407,10 +608,27 @@ class Loader extends biesGrammarVisitor {
         return elseDetails;
     }
 
+    /** 
+    * Devuelve los atributos de las funciones registradas en el contexto.
+    * 
+    * @method getFunctionAttributes
+    * 
+    * @returns {Object} Un objeto que contiene los atributos de las funciones, con sus respectivos detalles y secuencia.
+    */
     getFunctionAttributes() {
         return this.functionAttributes;
     }
 
+    /** 
+    * Reemplaza las declaraciones `LetDeclaration` que contienen expresiones de lambda en el cuerpo de la función
+    * con la secuencia de instrucciones adecuada para la lambda. Si el cuerpo de la lambda es una expresión binaria o 
+    * un bloque de sentencias, se procesa y reemplaza la declaración `LetDeclaration` con el cuerpo de la lambda.
+    * Además, guarda la secuencia de la función y el cuerpo de la lambda en los atributos de la función.
+    * 
+    * @method transformLetDeclarationsWithLambdas
+    * 
+    * @throws {Error} Si el cuerpo de la lambda no es reconocido o tiene un formato inesperado.
+    */
     transformLetDeclarationsWithLambdas() {
         console.log("Transformando LetDeclarations con Lambdas...");
       
@@ -462,6 +680,13 @@ class Loader extends biesGrammarVisitor {
         }
     }
 
+    /** 
+    * Ejecuta la transformación de las declaraciones `LetDeclaration` con expresiones de lambda y luego
+    * recorre todas las funciones registradas, imprimiendo información sobre cada una de ellas.
+    * Para cada función, se muestra el nombre, el ID y la secuencia de instrucciones asociada.
+    * 
+    * @method getResults
+    */
     getResults() {
         this.transformLetDeclarationsWithLambdas();
         for (const functionName in this.functionAttributes) {
@@ -471,6 +696,17 @@ class Loader extends biesGrammarVisitor {
             console.log("Secuencia:", JSON.stringify(attributes.secuencia, null, 2));
             console.log("====================================");
         }
+    }
+
+    /** 
+    * Devuelve los resultados procesados por el sistema.
+    * 
+    * @method getResultsCommander
+    * 
+    * @returns {Array} Un array que contiene los resultados procesados.
+    */
+    getResultsCommander() {
+        return this.results;
     }
 }
 
