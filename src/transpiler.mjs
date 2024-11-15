@@ -30,6 +30,8 @@ class Transpiler {
                     this.transpileComparisionExpression(attributes[i]);
                 } else if (attributes[i].type === 'IfStatement') {
                     this.transpileIfStatement(attributes[i]);
+                } else if (attributes[i].type === 'PrintStatement') {
+                    this.transpilePrintStatement(attributes[i]); // Manejo de PrintStatement
                 }
 
                 // if (attributes[i].type === 'FunctionDeclaration') {
@@ -100,7 +102,17 @@ class Transpiler {
     transpileIfStatement(node) {
         
     }
-
+    
+    transpilePrintStatement(node) {
+        // Iterar sobre los argumentos del PrintStatement
+        node.args.forEach(arg => {
+            this.loadValue(arg); // Cargar el valor del argumento en la pila
+        });
+    
+        // Emitir la instrucción de impresión
+        this.instructions.push('PRN'); // Comando para imprimir
+    }
+    
     transpileComparisionExpression(node) {
         this.loadValue(node.right);
         this.loadValue(node.left);
