@@ -1,6 +1,10 @@
 let {
-    const a = 5
-    const b = 10
+    const a = "Hola";
+    let {
+        const b = "hola"
+    } in {
+        print(b)
+    }
 } in {
-    print(a + b)  // Resultado: 15
+    print(a)
 }
