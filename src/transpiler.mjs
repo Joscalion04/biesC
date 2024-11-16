@@ -20,7 +20,7 @@ class Transpiler {
         this.instructions = [];
         this.functionAttributes = functionAttributes;
         this.ifIndexes = [];
-        this.actualIfIndex = -1;
+        this.instructionIndexes = [];
     }
 
     /** 
@@ -92,9 +92,7 @@ class Transpiler {
     }
 
     transpileBlock(block, bindingIndex) {
-        console.log('Block: ', block);
         block.statements.forEach(statement => {
-            console.log('Statement: ', statement);
             if (statement.type === 'LetDeclaration' || statement.type === 'ConstDeclaration') {
                 this.transpileValueDeclaration(statement, bindingIndex);
             } else if (statement.type === 'FunctionCall') {
@@ -114,22 +112,57 @@ class Transpiler {
     }
     
     transpileIfStatement(node, bindingIndex) {
-        this.actualIfIndex++;
-        if (node.body) {
-            this.transpileBlock(node.body, bindingIndex);
+        // Procesar el bloque del `if`
+        this.processIfBranch(node.condition, node.body, "if", bindingIndex);
+    
+        // Procesar el bloque del `else if`
+        if (node.elseIfStatement) {
+            this.processElseIfBranch(node.elseIfStatement, bindingIndex);
         }
-        // Al salir del if, se reduce el incide
-        this.actualIfIndex--;
+    
+        // Procesar el bloque del `else`
+        if (node.elseStatement) {
+            this.transpileBlock(node.elseStatement.body, bindingIndex);
+        }
     }
-
+    
+    processIfBranch(condition, body, label, bindingIndex) {
+        this.addBranch(condition, body, label, bindingIndex);
+    }
+    
+    processElseIfBranch(elseIfNode, bindingIndex) {
+        this.transpileComparisionExpression(elseIfNode.condition);
+        this.addBranch(elseIfNode.condition, elseIfNode.body, "else if", bindingIndex);
+    
+        // Procesar el bloque del `else` dentro del `else if`
+        if (elseIfNode.elseStatement) {
+            this.transpileBlock(elseIfNode.elseStatement.body, bindingIndex);
+        }
+    }
+    
+    addBranch(condition, body, label, bindingIndex) {
+        this.ifIndexes.push(1);
+        this.instructionIndexes.push(this.instructions.length);
+    
+        if (body) {
+            this.transpileBlock(body, bindingIndex);
+        }
+    
+        const indexToInsert = this.instructionIndexes.pop() - 1;
+        const conditionText = condition ? `${condition.left} ${condition.operator} ${condition.right}` : "";
+        this.instructions.splice(
+            indexToInsert + 1,
+            0,
+            `BF ${this.ifIndexes.pop()}              ; ${label}(${conditionText})`
+        );
+    }
+    
     getFunctionClosure(functionName) {
         return this.functionAttributes[functionName].id;
     }
 
     incrementActualIfIndex() {
-        if (this.actualIfIndex > -1) {
-            this.ifIndexes[this.actualIfIndex]++;
-        }
+        this.ifIndexes.push(this.ifIndexes.pop() + 1);
     }
 
     /** 
@@ -147,16 +180,18 @@ class Transpiler {
     loadValue(value) {
         if (typeof value === 'number') {
             this.instructions.push(`LDV ${value}`);
+            this.incrementActualIfIndex();
         } else if (typeof value === 'string') {
             this.instructions.push(`LDV "${value}"`);
+            this.incrementActualIfIndex();
         } else if (typeof value === 'object') {
             if (value.type === 'FunctionCall') {
                 this.transpileFunctionCall(value);
             } else {
                 this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
+                this.incrementActualIfIndex();
             }
         }
-        this.incrementActualIfIndex();
     }
 
     /** 

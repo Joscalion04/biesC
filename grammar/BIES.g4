@@ -71,7 +71,7 @@ block: '{' (statement)* '}';
 
 ifStatement: 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
 
-elseIfStatement: 'else' 'if' '(' expression ')' block;
+elseIfStatement: 'else' 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
 
 elseStatement: ELSE block;
 

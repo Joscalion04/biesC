@@ -17,8 +17,10 @@ fun multiply(a, b) {
 
 if (x > 5) {
     let result = add(x, y);
-} else {
+} else if (y < 5) {
     let result = multiply(x, y);
+} else {
+    let result = add(x, y);
 }
 
 add(5, 10);

@@ -649,8 +649,7 @@ class Loader extends biesGrammarVisitor {
         this.addAttribute(ifDetails);
     
         if (ctx.elseIfStatement()) {
-            const elseIfStatements = ctx.elseIfStatement().map(elseIfCtx => this.visit(elseIfCtx));
-            ifDetails.elseIfStatements = elseIfStatements;
+            ifDetails.elseIfStatement = this.visit(ctx.elseIfStatement());
         }
     
         if (ctx.elseStatement()) {
@@ -673,15 +672,23 @@ class Loader extends biesGrammarVisitor {
     visitElseIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
         const body = ctx.block() ? this.visit(ctx.block()) : null;
-    
+
         const elseIfDetails = {
             type: 'ElseIfStatement',
             condition,
             body
         };
-    
+
         this.addAttribute(elseIfDetails);
-    
+
+        if (ctx.elseIfStatement()) {
+            elseIfDetails.elseIfStatement = this.visit(ctx.elseIfStatement());
+        }
+
+        if (ctx.elseStatement()) {
+            elseIfDetails.elseStatement = this.visit(ctx.elseStatement());
+        }
+
         return elseIfDetails;
     }   
 
@@ -696,7 +703,7 @@ class Loader extends biesGrammarVisitor {
     */
     visitElseStatement(ctx) {
         const body = ctx.block() ? this.visit(ctx.block()) : null;
-    
+
         const elseDetails = {
             type: 'ElseStatement',
             body
