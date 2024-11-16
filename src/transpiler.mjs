@@ -22,7 +22,7 @@ class Transpiler {
         this.ifIndexes = [];
         this.instructionIndexes = [];
         this.attributesSet = new Set();
-        this.bindingIndex = 0;
+        this.bindings = [];
     }
 
     /** 
@@ -41,7 +41,7 @@ class Transpiler {
         // Recorrer cada función y procesar sus atributos
         for (const functionName in this.functionAttributes) {
 
-            this.bindingIndex = 0;
+            this.bindings.unshift({fun: functionName, binding: []});
             
             this.instructions.push('=================================');
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
@@ -141,6 +141,32 @@ class Transpiler {
             default:
                 console.warn('Tipo de atributo desconocido:', attribute.type);
         }
+    }
+
+    // Función auxiliar para buscar índices genéricos
+    findIndex(callback) {
+        for (let index = 0; index < this.bindings.length; index++) {
+            if (callback(this.bindings[index], index)) {
+                return index; // Devuelve el índice si la condición se cumple
+            }
+        }
+        return -1; // Devuelve -1 si no encuentra el valor
+    }
+
+    // Busca el índice de un binding dentro de los bindings de una función
+    getBindingIndex(id) {
+        for (const bindings of this.bindings) {
+            const index = bindings.binding.indexOf(id);
+            if (index !== -1) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    // Busca el índice de un binding por nombre de función
+    getBindingIndexByName(fun) {
+        return this.findIndex((binding) => binding.fun === fun);
     }
 
     // Manejar expresiones binarias
@@ -399,7 +425,8 @@ class Transpiler {
            // this.instructions.push(`BLD 0 ${bindingIndex}`); // Asociar al binding index
         } else {
             this.loadValue(node.value); // Manejar el valor normalmente
-            this.instructions.push(`BST 0 ${this.bindingIndex++}`);
+            this.bindings[0].binding.push(node.id);
+            this.instructions.push(`BST 0 ${this.getBindingIndex(node.id)}`); // Asociar al binding index
             this.incrementActualIfIndex();
         }
         
