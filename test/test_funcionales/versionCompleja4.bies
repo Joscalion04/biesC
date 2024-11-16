@@ -1,0 +1,9 @@
+// Version compleja 4 let-in
+ let {
+ const splash = (msg) => print(msg)
+ const greetings = () => "Hello World!"
+ } in {
+ let version = 4 * 4 / (3 + 1)
+ splash("Testing helloworld Version " + version + " ***")
+ print(greetings())
+ }
