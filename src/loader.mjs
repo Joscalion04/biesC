@@ -266,52 +266,47 @@ class Loader extends biesGrammarVisitor {
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
         
-        // Visitamos la expresión asociada al `const` para obtener su valor, marcándola como anidada
+        // Visitamos la expresión asociada al `const` para obtener su valor
         const value = this.visit(ctx.expression());
         
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
         
-        // Si el valor es una LambdaExpression
+        // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
         if (value && value.type === 'LambdaExpression') {
-            // Inicializar atributos de la función lambda
+            // Inicializamos atributos de la función lambda
             this.functionAttributes[id] = this.initializeAttributes();
-        
+            
             // Detalles de la función
             const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: id,
                 params: value.params
             };
-        
-            // Registrar la función en el contexto global
-            const prevFunction = this.currentFunction;
-            this.currentFunction = id;
+
+            // Agregamos la función al contexto
             this.addAttribute(functionDetails);
-        
-            // Agregar el cuerpo de la lambda al contexto de la función
+            
+            // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
             if (value.body) {
                 if (Array.isArray(value.body)) {
                     // Si el cuerpo es un bloque de sentencias
                     this.functionAttributes[id].secuencia.push(...value.body);
                 } else {
-                    // Si el cuerpo es una única declaración, como PrintStatement o BinaryExpression
+                    // Si el cuerpo es una única expresión
                     this.functionAttributes[id].secuencia.push(value.body);
                 }
             }
-        
-            // Restaurar el contexto anterior
-            this.currentFunction = prevFunction;
         }
         
-        // Detalles del ConstDeclaration
+        // Detalles de la declaración const
         const constDetails = {
             type: 'ConstDeclaration',
             id,
             value
         };
         
-        // Agregar la declaración `const` al contexto actual
+        // Guardamos la declaración const en el contexto
         this.addAttribute(constDetails);
         
         return constDetails;
