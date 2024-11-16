@@ -21,6 +21,7 @@ class Transpiler {
         this.functionAttributes = functionAttributes;
         this.ifIndexes = [];
         this.instructionIndexes = [];
+        this.attributesSet = new Set();
     }
 
     /** 
@@ -42,7 +43,9 @@ class Transpiler {
         for (const functionName in this.functionAttributes) {
 
             let bindingIndex = 0;
-
+            // console.log('==============================================================================================================');
+            // console.log('Función: ', functionName);
+            // console.log('==============================================================================================================');
             this.instructions.push('=================================');
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
 
@@ -54,6 +57,10 @@ class Transpiler {
                 // console.log('Atributo: ', attributes[i]);
 
                 if (attributes[i].type === 'LetDeclaration' || attributes[i].type === 'ConstDeclaration') {
+                    if (this.attributesSet.has(attributes[i].id)) {
+                        continue;
+                    }
+                    this.attributesSet.add(attributes[i].id);
                     for (let j = i+1; j < attributes.length; j++) {
                         if (attributes[j].type === 'Block') {
                             if (attributes[j].statements[0] !== attributes[i]) {
@@ -63,19 +70,37 @@ class Transpiler {
                             break;
                         }
                     }
-                } else if (attributes[i].type === 'FunctionCall') {
-                    // this.transpileFunctionCall(attributes[i]);
                 } else if (attributes[i].type === 'ComparisionExpression') {
+                    if (this.attributesSet.has(attributes[i].id)) {
+                        continue;
+                    }
+                    this.attributesSet.add(attributes[i].id);
                     this.transpileComparisionExpression(attributes[i]);
                 } else if (attributes[i].type === 'IfStatement') {
+                    if (this.attributesSet.has(attributes[i].condition.id)) {
+                        continue;
+                    }
+                    this.attributesSet.add(attributes[i].condition.id);
                     this.transpileIfStatement(attributes[i], bindingIndex);
+                } else if (attributes[i].type === 'Block') {
+                    if (this.attributesSet.has(attributes[i].id)) {
+                        continue;
+                    }
+                    this.attributesSet.add(attributes[i].id);
+                    this.transpileBlock(attributes[i], bindingIndex);
+                } else if (attributes[i].type === 'BinaryExpression') {
+                    if (this.attributesSet.has(attributes[i].id)) {
+                        continue;
+                    }
+                    this.attributesSet.add(attributes[i].id);
+                    this.transpileExpression(attributes[i]); // Manejo de BinaryExpression
                 } else if (attributes[i].type === 'PrintStatement') {
                     // this.transpilePrintStatement(attributes[i]); // Manejo de PrintStatement
                 } else if (attributes[i].type === 'ExpressionStatement') {
                     // this.transpileExpressionStatement(attributes[i]); // Manejo de ExpressionStatement
-                } else if (attributes[i].type === 'BinaryExpression') {
-                    // this.transpileExpression(attributes[i]); // Manejo de BinaryExpression
-                }
+                } else if (attributes[i].type === 'FunctionCall') {
+                    // this.transpileFunctionCall(attributes[i]);
+                } 
 
                // if (attributes[i].type === 'FunctionDeclaration') {
                //      this.transpileFunctionDeclaration(attributes[i], bindingIndex);
@@ -94,21 +119,94 @@ class Transpiler {
     transpileBlock(block, bindingIndex) {
         block.statements.forEach(statement => {
             if (statement.type === 'LetDeclaration' || statement.type === 'ConstDeclaration') {
+                if (this.attributesSet.has(statement.id)) {
+                    return;
+                }
+                this.attributesSet.add(statement.id);
                 this.transpileValueDeclaration(statement, bindingIndex);
-            } else if (statement.type === 'FunctionCall') {
-                // this.transpileFunctionCall(statement);
-            } else if (statement.type === 'ComparisionExpression') {
+            }else if (statement.type === 'ComparisionExpression') {
+                if (this.attributesSet.has(statement.id)) {
+                    return;
+                }
+                this.attributesSet.add(statement.id);
                 this.transpileComparisionExpression(statement);
             } else if (statement.type === 'IfStatement') {
+                if (this.attributesSet.has(statement.condition.id)) {
+                    return;
+                }
+                this.attributesSet.add(statement.condition.id);
                 this.transpileIfStatement(statement, bindingIndex);
+            } else if (statement.type === 'ReturnStatement') {
+                if (this.attributesSet.has(statement.id)) {
+                    return;
+                }
+                this.attributesSet.add(statement.id);
+                this.transpileReturnStatement(statement);
+            } else if (statement.type === 'BinaryExpression') {
+                if (this.attributesSet.has(statement.id)) {
+                    return;
+                }
+                this.attributesSet.add(statement.id);
+                this.transpileExpression(statement); // Manejo de BinaryExpression
             } else if (statement.type === 'PrintStatement') {
                 // this.transpilePrintStatement(statement); // Manejo de PrintStatement
             } else if (statement.type === 'ExpressionStatement') {
                 // this.transpileExpressionStatement(statement); // Manejo de ExpressionStatement
-            } else if (statement.type === 'BinaryExpression') {
-                // this.transpileExpression(statement); // Manejo de BinaryExpression
-            }
+            } else if (statement.type === 'FunctionCall') {
+                // this.transpileFunctionCall(statement);
+            } 
         });
+    }
+
+    transpileValue(value) {
+        if (value.type === 'LetDeclaration' || value.type === 'ConstDeclaration') {
+            if (this.attributesSet.has(value.id)) {
+                return;
+            }
+            this.attributesSet.add(value.id);
+            this.transpileValueDeclaration(value);
+        } else if (value.type === 'ComparisionExpression') {
+            if (this.attributesSet.has(value.id)) {
+                return;
+            }
+            this.attributesSet.add(value.id);
+            this.transpileComparisionExpression(value);
+        } else if (value.type === 'IfStatement') {
+            if (this.attributesSet.has(value.condition.id)) {
+                return;
+            }
+            this.attributesSet.add(value.condition.id);
+            this.transpileIfStatement(value);
+        } else if (value.type === 'Block') {
+            if (this.attributesSet.has(value.id)) {
+                return;
+            }
+            this.attributesSet.add(value.id);
+            this.transpileBlock(value);
+        } else if (value.type === 'BinaryExpression') {
+            if (this.attributesSet.has(value.id)) {
+                return;
+            }
+            this.attributesSet.add(value.id);
+            this.transpileExpression(value); // Manejo de BinaryExpression
+        } else if (value.type === 'FunctionCall') {
+            if (this.attributesSet.has(value.id)) {
+                return;
+            }
+            this.attributesSet.add(value.id);
+            this.transpileFunctionCall(value);
+        } else if (value.type === 'PrintStatement') {
+            // this.transpilePrintStatement(value); // Manejo de PrintStatement
+        } else if (value.type === 'ExpressionStatement') {
+            // this.transpileExpressionStatement(value); // Manejo de ExpressionStatement
+        }
+
+    }
+
+    transpileReturnStatement(node) {
+        this.transpileValue(node.value);
+        this.instructions.push('RET');
+        this.incrementActualIfIndex();
     }
     
     transpileIfStatement(node, bindingIndex) {
@@ -131,7 +229,10 @@ class Transpiler {
     }
     
     processElseIfBranch(elseIfNode, bindingIndex) {
-        this.transpileComparisionExpression(elseIfNode.condition);
+        if (!this.attributesSet.has(elseIfNode.condition.id)) {
+            this.attributesSet.add(elseIfNode.condition.id);
+            this.transpileComparisionExpression(elseIfNode.condition);
+        }
         this.addBranch(elseIfNode.condition, elseIfNode.body, "else if", bindingIndex);
     
         // Procesar el bloque del `else` dentro del `else if`
@@ -348,11 +449,11 @@ class Transpiler {
     */
     transpileExpression(node) {
         if (node.type === 'BinaryExpression') {
-            // Procesa recursivamente la parte izquierda de la expresión
-            this.transpileExpression(node.left);
-    
             // Procesa recursivamente la parte derecha de la expresión
             this.transpileExpression(node.right);
+
+            // Procesa recursivamente la parte izquierda de la expresión
+            this.transpileExpression(node.left);
     
             // Aplica el operador binario al resultado de los operandos
             this.loadBinaryOperator(node.operator);

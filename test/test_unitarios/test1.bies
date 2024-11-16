@@ -2,7 +2,9 @@ let x = 10;
 const y = 20;
 
 fun add(a, b) {
+    let z = 10;
     fun test(a, b) {
+        let z = 20;
         fun test2(a, b) {
             return a + b;
         }

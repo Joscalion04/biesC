@@ -29,6 +29,7 @@ class Loader extends biesGrammarVisitor {
         this.functionAttributes = {};
         this.functionAttributes[this.globalContext] = this.initializeAttributes();
         this.scopeStack = [{}];  // Se añade la pila de alcance
+        this.attributeId = 0;
     }
     /** 
      * Inicializa los atributos para una nueva función o contexto, asignando un ID único 
@@ -75,7 +76,8 @@ class Loader extends biesGrammarVisitor {
         const letInDetails = {
             type: 'LetInDeclaration',
             declarations: [],
-            body: null
+            body: null,
+            id: this.attributeId++
         };
     
         // Guardamos el estado de la pila de alcance antes de entrar al bloque let-in
@@ -143,7 +145,8 @@ class Loader extends biesGrammarVisitor {
         const value = this.visit(ctx.expression());
         const returnDetails = {
             type: 'ReturnStatement',
-            value
+            value,
+            id: this.attributeId++
         };
         this.addAttribute(returnDetails);
         return returnDetails;
@@ -183,7 +186,8 @@ class Loader extends biesGrammarVisitor {
             const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: id,
-                params: value.params
+                params: value.params,
+                id: this.attributeId++
             };
     
             // Agregamos la función al contexto
@@ -205,7 +209,8 @@ class Loader extends biesGrammarVisitor {
         const letDetails = {
             type: 'LetDeclaration',
             id,
-            value
+            value,
+            id: this.attributeId++
         };
         
         // Guardamos la declaración let en el contexto
@@ -280,7 +285,8 @@ class Loader extends biesGrammarVisitor {
             const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: id,
-                params: value.params
+                params: value.params,
+                id: this.attributeId++
             };
 
             // Agregamos la función al contexto
@@ -301,7 +307,8 @@ class Loader extends biesGrammarVisitor {
         const constDetails = {
             type: 'ConstDeclaration',
             id,
-            value
+            value,
+            id: this.attributeId++
         };
         this.addAttribute(constDetails);
         return constDetails;
@@ -346,7 +353,8 @@ class Loader extends biesGrammarVisitor {
                     type: 'BinaryExpression',
                     left: result,
                     operator,
-                    right: assignmentValue
+                    right: assignmentValue,
+                    id: this.attributeId++
                 };
                 
                 if (!this.processingLambda) {
@@ -387,7 +395,8 @@ class Loader extends biesGrammarVisitor {
                 type: 'AssignmentExpression',
                 left: result,
                 operator,
-                right: comparisonValue
+                right: comparisonValue,
+                id: this.attributeId++
             };
             this.addAttribute(assignmentDetails);
             result = assignmentDetails;
@@ -409,7 +418,8 @@ class Loader extends biesGrammarVisitor {
                 type: 'ComparisionExpression',
                 left: result,
                 operator,
-                right: factorValue
+                right: factorValue,
+                id: this.attributeId++
             };
             this.addAttribute(comparisonDetails);
             result = comparisonDetails;
@@ -514,7 +524,8 @@ class Loader extends biesGrammarVisitor {
         const functionCallDetails = {
             type: 'FunctionCall',
             functionName,
-            args
+            args,
+            id: this.attributeId++
         };
 
         this.addAttribute(functionCallDetails);
@@ -540,7 +551,8 @@ class Loader extends biesGrammarVisitor {
 
         const printDetails = {
             type: 'PrintStatement',
-            args: args.flat()
+            args: args.flat(),
+            id: this.attributeId++
         };
 
         // Solo añadimos el print al contexto actual si no estamos dentro de una lambda
@@ -574,7 +586,8 @@ class Loader extends biesGrammarVisitor {
         const functionDetails = {
             type: 'FunctionDeclaration',
             name: functionName,
-            params
+            params,
+            id: this.attributeId++
         };
 
         this.addAttribute(functionDetails);
@@ -610,7 +623,8 @@ class Loader extends biesGrammarVisitor {
         const expression = this.visit(ctx.expression());
         const expressionDetails = {
             type: 'ExpressionStatement',
-            expression
+            expression,
+            id: this.attributeId++
         };
 
         this.addAttribute(expressionDetails);
@@ -643,7 +657,8 @@ class Loader extends biesGrammarVisitor {
         const ifDetails = {
             type: 'IfStatement',
             condition,
-            body
+            body,
+            id: this.attributeId++
         };
     
         this.addAttribute(ifDetails);
@@ -676,7 +691,8 @@ class Loader extends biesGrammarVisitor {
         const elseIfDetails = {
             type: 'ElseIfStatement',
             condition,
-            body
+            body,
+            id: this.attributeId++
         };
 
         this.addAttribute(elseIfDetails);
@@ -706,7 +722,8 @@ class Loader extends biesGrammarVisitor {
 
         const elseDetails = {
             type: 'ElseStatement',
-            body
+            body,
+            id: this.attributeId++
         };
     
         this.addAttribute(elseDetails);
@@ -727,7 +744,8 @@ class Loader extends biesGrammarVisitor {
     
         const blockDetails = {
             type: 'Block',
-            statements
+            statements,
+            id: this.attributeId++
         };
     
         this.addAttribute(blockDetails);
