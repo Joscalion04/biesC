@@ -460,7 +460,36 @@ class Loader extends biesGrammarVisitor {
         }
         return null;
     }
-
+    
+    visitStatement(ctx) {
+        if (ctx.expressionStatement()) {
+            return this.visit(ctx.expressionStatement());
+        }
+        if (ctx.printStatement()) {
+            return this.visit(ctx.printStatement());
+        }
+        if (ctx.functionDeclaration()) {
+            return this.visit(ctx.functionDeclaration());
+        }
+        if (ctx.ifStatement()) {
+            return this.visit(ctx.ifStatement());
+        }
+        if (ctx.letDeclaration()) {
+            return this.visit(ctx.letDeclaration());
+        }
+        if (ctx.constDeclaration()) {
+            return this.visit(ctx.constDeclaration());
+        }
+        if (ctx.returnStatement()) {
+            return this.visit(ctx.returnStatement());
+        }
+        if (ctx.letInDeclaration()) {
+            return this.visit(ctx.letInDeclaration());
+        }
+        if (ctx.block()) {
+            return this.visit(ctx.block());
+        }
+    }
 
     /** 
     * Procesa una llamada a función, extrayendo el nombre de la función y los argumentos que le son pasados.
@@ -609,27 +638,27 @@ class Loader extends biesGrammarVisitor {
     */
     visitIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
+        const body = ctx.block() ? this.visit(ctx.block()) : null;
+    
         const ifDetails = {
             type: 'IfStatement',
-            condition
+            condition,
+            body
         };
-
+    
         this.addAttribute(ifDetails);
-
-        if (ctx.block()) {
-            this.visit(ctx.block());
-        }
-
+    
         if (ctx.elseIfStatement()) {
-            this.visit(ctx.elseIfStatement());
+            const elseIfStatements = ctx.elseIfStatement().map(elseIfCtx => this.visit(elseIfCtx));
+            ifDetails.elseIfStatements = elseIfStatements;
         }
-
+    
         if (ctx.elseStatement()) {
-            this.visit(ctx.elseStatement());
+            ifDetails.elseStatement = this.visit(ctx.elseStatement());
         }
-
+    
         return ifDetails;
-    }
+    }    
     
     /** 
     * Procesa una declaración `else if`, evaluando la condición y registrando los detalles de la declaración `else if`.
@@ -643,20 +672,18 @@ class Loader extends biesGrammarVisitor {
     */
     visitElseIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
+        const body = ctx.block() ? this.visit(ctx.block()) : null;
+    
         const elseIfDetails = {
             type: 'ElseIfStatement',
-            condition
+            condition,
+            body
         };
-
+    
         this.addAttribute(elseIfDetails);
-
-        if (ctx.block()) {
-            this.visit(ctx.block());
-        }
-
+    
         return elseIfDetails;
-    }
-
+    }   
 
     /** 
     * Procesa una declaración `else` y registra los detalles de la declaración `else`.
@@ -668,19 +695,38 @@ class Loader extends biesGrammarVisitor {
     * @returns {Object} Un objeto que representa la declaración `else`, con el tipo `ElseStatement`.
     */
     visitElseStatement(ctx) {
+        const body = ctx.block() ? this.visit(ctx.block()) : null;
+    
         const elseDetails = {
-            type: 'ElseStatement'
+            type: 'ElseStatement',
+            body
         };
-
+    
         this.addAttribute(elseDetails);
-
-        if (ctx.block()) {
-            this.visit(ctx.block());
-        }
-
+    
         return elseDetails;
-    }
+    }  
 
+    /**
+     * Procesa un bloque de instrucciones, visitando cada una de las instrucciones contenidas en el bloque.
+     * 
+     * @method visitBlock
+     * 
+     * @param {Object} ctx El contexto del bloque de instrucciones, que contiene una lista de instrucciones.
+     * @returns {Object} Un objeto que representa el bloque de instrucciones, con el tipo `Block`.
+    */ 
+    visitBlock(ctx) {
+        const statements = ctx.statement().map(stmt => this.visit(stmt));
+    
+        const blockDetails = {
+            type: 'Block',
+            statements
+        };
+    
+        this.addAttribute(blockDetails);
+    
+        return blockDetails;
+    }   
     
      /** 
     * Devuelve los atributos de las funciones registradas en el contexto.
