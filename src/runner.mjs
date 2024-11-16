@@ -77,16 +77,16 @@ function parseBIESCode(inputFile) {
   * Crea una instancia del transpiler `Transpiler`.
   * El transpiler se encarga de convertir las funciones obtenidas del visitor en un formato deseado.
   * @constant {Transpiler} transpiler - Instancia del transpiler.
+  * @param {Array<Object>} functionAttributes - Atributos de las funciones a transpilar.
   */
-  const transpiler = new Transpiler();
+  const transpiler = new Transpiler(loader.getFunctionAttributes());
 
   /**
   * Transpila las funciones obtenidas desde el visitor `Loader`.
   * Llama al método `transpile` para procesar los atributos de las funciones definidos en el AST.
   * @method transpile
-  * @param {Array<Object>} functionAttributes - Atributos de las funciones a transpilar.
   */
-  //transpiler.transpile(loader.getFunctionAttributes());
+  transpiler.transpile();
   //  console.log(transpiler.getTranspiledCode());
 
  /**
