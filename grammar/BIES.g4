@@ -75,6 +75,6 @@ elseIfStatement: 'else' 'if' '(' expression ')' block;
 
 elseStatement: ELSE block;
 
-lambdaExpression: '(' parameterList? ')' '=>' (block | expression); 
+lambdaExpression: '(' parameterList? ')' '=>' (block | expression | lambdaExpression); 
 
 listAccess: ID '[' expression ']';
