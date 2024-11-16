@@ -260,7 +260,43 @@ class Loader extends biesGrammarVisitor {
     */
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
+        
+        // Guardamos el estado original de processingLambda
+        const wasProcessingLambda = this.processingLambda;
+        this.processingLambda = true;
+        
+        // Visitamos la expresión asociada al `const` para obtener su valor
         const value = this.visit(ctx.expression());
+
+        // Restauramos el estado de processingLambda
+        this.processingLambda = wasProcessingLambda;
+        
+        // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
+        if (value && value.type === 'LambdaExpression') {
+            // Inicializamos atributos de la función lambda
+            this.functionAttributes[id] = this.initializeAttributes();
+            
+            // Detalles de la función
+            const functionDetails = {
+                type: 'FunctionDeclaration',
+                name: id,
+                params: value.params
+            };
+
+            // Agregamos la función al contexto
+            this.addAttribute(functionDetails);
+            
+            // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
+            if (value.body) {
+                if (Array.isArray(value.body)) {
+                    // Si el cuerpo es un bloque de sentencias
+                    this.functionAttributes[id].secuencia.push(...value.body);
+                } else {
+                    // Si el cuerpo es una única expresión
+                    this.functionAttributes[id].secuencia.push(value.body);
+                }
+            }
+        }
 
         const constDetails = {
             type: 'ConstDeclaration',
