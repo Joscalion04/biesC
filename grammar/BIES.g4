@@ -38,7 +38,7 @@ letDeclaration: 'let' ID '=' expression ';'? ;
 constDeclaration: 'const' ID '=' expression ';'? ;
 
 // let-in Declaration
-letInDeclaration: 'let' '{' (constDeclaration | letDeclaration)* '}' 'in' block ';'? ;
+letInDeclaration: 'let' '{' (constDeclaration | letDeclaration | letInDeclaration)* '}' 'in' block ';'? ;
 functionDeclaration: 'fun' ID '(' parameterList? ')' block;
 returnStatement: 'return' expression? ';'? ;
 expressionStatement: expression ';'? ;
