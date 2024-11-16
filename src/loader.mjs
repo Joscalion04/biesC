@@ -152,81 +152,71 @@ class Loader extends biesGrammarVisitor {
 
 
     /** 
-    * Procesa una declaración `let`, evaluando su expresión y manejando el caso donde la 
-    * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
-    * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración `let` 
-    * en los atributos de la función actual y los resultados globales.
-    * 
-    * @method visitLetDeclaration
-    * 
-    * @param {Object} ctx El contexto de la declaración `let`, que contiene el identificador y la expresión a evaluar.
-    * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
-    */
+        * Procesa una declaración let, evaluando su expresión y manejando el caso donde la 
+        * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
+        * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración let 
+        * en los atributos de la función actual y los resultados globales.
+        * 
+        * @method visitLetDeclaration
+        * 
+        * @param {Object} ctx El contexto de la declaración let, que contiene el identificador y la expresión a evaluar.
+        * @returns {Object} Un objeto que representa la declaración let, con el tipo, el identificador y el valor evaluado.
+        */
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
-        
+
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
-        
-        // Visitamos la expresión asociada al `let` para obtener su valor
+
+        // Visitamos la expresión asociada al let para obtener su valor
         const value = this.visit(ctx.expression());
-        
-        
+
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
-        
-        // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
+
+        // Si el valor es una LambdaExpression
         if (value && value.type === 'LambdaExpression') {
-            // Inicializamos atributos de la función lambda
+            // Inicializar atributos de la función lambda
             this.functionAttributes[id] = this.initializeAttributes();
-            
+
             // Detalles de la función
             const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: id,
                 params: value.params
             };
-        
+
             // Registrar la función en el contexto global
             const prevFunction = this.currentFunction;
             this.currentFunction = id;
-    
-            // Agregamos la función al contexto
             this.addAttribute(functionDetails);
-        
+
             // Agregar el cuerpo de la lambda al contexto de la función
-            
-            // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
             if (value.body) {
                 if (Array.isArray(value.body)) {
                     // Si el cuerpo es un bloque de sentencias
                     this.functionAttributes[id].secuencia.push(...value.body);
                 } else {
-                    // Si el cuerpo es una única expresión
+                    // Si el cuerpo es una única declaración, como PrintStatement o BinaryExpression
                     this.functionAttributes[id].secuencia.push(value.body);
                 }
             }
-        
+
             // Restaurar el contexto anterior
             this.currentFunction = prevFunction;
         }
-        
+
         // Detalles del LetDeclaration
-        
-        // Detalles de la declaración let
         const letDetails = {
             type: 'LetDeclaration',
             id,
             value
         };
-        
-        // Agregar la declaración `let` al contexto actual
-        
-        // Guardamos la declaración let en el contexto
+
+        // Agregar la declaración let al contexto actual
         this.addAttribute(letDetails);
-        
-        
+
         return letDetails;
     }
 

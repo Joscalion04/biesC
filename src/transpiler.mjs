@@ -118,6 +118,8 @@ class Transpiler {
         if (node.body) {
             this.transpileBlock(node.body, bindingIndex);
         }
+        // Al salir del if, se reduce el incide
+        this.actualIfIndex--;
     }
 
     getFunctionClosure(functionName) {

@@ -86,7 +86,7 @@ function parseBIESCode(inputFile) {
   * Llama al método `transpile` para procesar los atributos de las funciones definidos en el AST.
   * @method transpile
   */
-  transpiler.transpile();
+  // transpiler.transpile();
   //  console.log(transpiler.getTranspiledCode());
 
  /**
