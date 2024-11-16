@@ -16,11 +16,8 @@ class Transpiler {
     * @constructor
     * @param {string} instructions - Instrucciones a transpilar 
     */
-    constructor(functionAttributes) {
+    constructor() {
         this.instructions = [];
-        this.functionAttributes = functionAttributes;
-        this.ifIndexes = [];
-        this.actualIfIndex = -1;
     }
 
     /** 
@@ -33,48 +30,41 @@ class Transpiler {
     * detención (`HLT`) al final de sus instrucciones.
     * 
     * @method transpile
-    *
+    * 
+    * @param {Object} functionAttributes Un objeto que contiene los atributos de las funciones, donde cada función
+    *                                    tiene un conjunto de instrucciones que deben ser procesadas.
     */
-    transpile() {
-        // console.log('Atributos de las funciones: ', functionAttributes);
+    transpile(functionAttributes) {
 
-        // Recorrer cada función y procesar sus atributos
-        for (const functionName in this.functionAttributes) {
+        for (const functionName in functionAttributes) {
 
             let bindingIndex = 0;
 
             this.instructions.push('=================================');
-            this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
+            this.instructions.push(`$FUN $${functionAttributes[functionName].id}                ; ${functionName}`);
 
-            const attributes = this.functionAttributes[functionName].secuencia;
+            const attributes = functionAttributes[functionName].secuencia;
+            // console.log('Atributo: ', attributes[11].args);
 
-            // Recorrer los atributos de la función
             for (let i = 0; i < attributes.length; i++) {
 
-                // console.log('Atributo: ', attributes[i]);
+                console.log('Atributo: ', attributes[i]);
 
                 if (attributes[i].type === 'LetDeclaration' || attributes[i].type === 'ConstDeclaration') {
-                    for (let j = i+1; j < attributes.length; j++) {
-                        if (attributes[j].type === 'Block') {
-                            if (attributes[j].statements[0] !== attributes[i]) {
-                                this.transpileValueDeclaration(attributes[i], bindingIndex);
-                                bindingIndex++;
-                            }
-                            break;
-                        }
-                    }
+                    this.transpileValueDeclaration(attributes[i], bindingIndex);
+                    bindingIndex++;
                 } else if (attributes[i].type === 'FunctionCall') {
-                    // this.transpileFunctionCall(attributes[i]);
+                     this.transpileFunctionCall(attributes[i],  functionAttributes[functionName].id);
                 } else if (attributes[i].type === 'ComparisionExpression') {
                     this.transpileComparisionExpression(attributes[i]);
                 } else if (attributes[i].type === 'IfStatement') {
-                    this.transpileIfStatement(attributes[i], bindingIndex);
+                    this.transpileIfStatement(attributes[i]);
                 } else if (attributes[i].type === 'PrintStatement') {
-                    // this.transpilePrintStatement(attributes[i]); // Manejo de PrintStatement
-                } else if (attributes[i].type === 'ExpressionStatement') {
-                    // this.transpileExpressionStatement(attributes[i]); // Manejo de ExpressionStatement
-                } else if (attributes[i].type === 'BinaryExpression') {
-                    // this.transpileExpression(attributes[i]); // Manejo de BinaryExpression
+                    this.transpilePrintStatement(attributes[i]); // Manejo de PrintStatement
+                }else if (attributes[i].type === 'ExpressionStatement') {
+                    this.transpileExpressionStatement(attributes[i]); // Manejo de ExpressionStatement
+                }else if (attributes[i].type === 'BinaryExpression') {
+                    this.transpileExpression(attributes[i]); // Manejo de BinaryExpression
                 }
 
                // if (attributes[i].type === 'FunctionDeclaration') {
@@ -89,47 +79,6 @@ class Transpiler {
             this.instructions.push('$END');
         }
         console.log('Instrucciones: ', this.instructions);
-    }
-
-    transpileBlock(block, bindingIndex) {
-        console.log('Block: ', block);
-        block.statements.forEach(statement => {
-            console.log('Statement: ', statement);
-            if (statement.type === 'LetDeclaration' || statement.type === 'ConstDeclaration') {
-                this.transpileValueDeclaration(statement, bindingIndex);
-            } else if (statement.type === 'FunctionCall') {
-                // this.transpileFunctionCall(statement);
-            } else if (statement.type === 'ComparisionExpression') {
-                this.transpileComparisionExpression(statement);
-            } else if (statement.type === 'IfStatement') {
-                this.transpileIfStatement(statement, bindingIndex);
-            } else if (statement.type === 'PrintStatement') {
-                // this.transpilePrintStatement(statement); // Manejo de PrintStatement
-            } else if (statement.type === 'ExpressionStatement') {
-                // this.transpileExpressionStatement(statement); // Manejo de ExpressionStatement
-            } else if (statement.type === 'BinaryExpression') {
-                // this.transpileExpression(statement); // Manejo de BinaryExpression
-            }
-        });
-    }
-    
-    transpileIfStatement(node, bindingIndex) {
-        this.actualIfIndex++;
-        if (node.body) {
-            this.transpileBlock(node.body, bindingIndex);
-        }
-        // Al salir del if, se reduce el incide
-        this.actualIfIndex--;
-    }
-
-    getFunctionClosure(functionName) {
-        return this.functionAttributes[functionName].id;
-    }
-
-    incrementActualIfIndex() {
-        if (this.actualIfIndex > -1) {
-            this.ifIndexes[this.actualIfIndex]++;
-        }
     }
 
     /** 
@@ -150,13 +99,10 @@ class Transpiler {
         } else if (typeof value === 'string') {
             this.instructions.push(`LDV "${value}"`);
         } else if (typeof value === 'object') {
-            if (value.type === 'FunctionCall') {
-                this.transpileFunctionCall(value);
-            } else {
-                this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
-            }
+            this.instructions.push(`LDV ${value.functionName}`);
+           
+           
         }
-        this.incrementActualIfIndex();
     }
 
     /** 
@@ -191,7 +137,6 @@ class Transpiler {
             default:
                 throw new Error(`Operador desconocido: ${operator}`);
         }
-        this.incrementActualIfIndex();
     }
 
     /** 
@@ -222,7 +167,10 @@ class Transpiler {
             default:
                 throw new Error(`Operador desconocido: ${operator}`);
         }
-        this.incrementActualIfIndex();
+    }
+    
+    transpileIfStatement(node) {
+        
     }
     
     transpilePrintStatement(node) {
@@ -233,7 +181,6 @@ class Transpiler {
     
         // Emitir la instrucción de impresión
         this.instructions.push('PRN'); // Comando para imprimir
-        this.incrementActualIfIndex();
     }
     
     transpileComparisionExpression(node) {
@@ -253,6 +200,7 @@ class Transpiler {
     * @param {number} bindingIndex El índice de enlace que se utiliza para asociar el valor cargado.
     */
     transpileValueDeclaration(node, bindingIndex) {
+        
         if (node.value.type === 'LambdaExpression') {
             // Manejo especial para LambdaExpression
             //this.instructions.push(`LDF $${node.id}`); // Cargar la función lambda
@@ -260,7 +208,6 @@ class Transpiler {
         } else {
             this.loadValue(node.value); // Manejar el valor normalmente
             this.instructions.push(`BLD 0 ${bindingIndex}`);
-            this.incrementActualIfIndex();
         }
         
     }
@@ -279,7 +226,6 @@ class Transpiler {
     transpileFunctionDeclaration(node, bindingIndex) {
         this.loadValue(node.name);
         this.instructions.push(`BLD 0 ${bindingIndex}`);
-        this.incrementActualIfIndex();
     }
  /**
     * Manejo de ExpressionStatement
@@ -293,12 +239,10 @@ class Transpiler {
     if (node.left && node.right) {
         this.loadValue(node.left);
         this.instructions.push(`OPR ${node.operator}`);
-        this.incrementActualIfIndex();
         this.loadValue(node.right);
     } else {
         // Para valores literales o variables
         this.instructions.push(`LDV ${node.value}`);
-        this.incrementActualIfIndex();
     }
     }
     /** 
@@ -324,7 +268,6 @@ class Transpiler {
         } else if (node.type === 'Identifier') {
             // Si es una variable, carga su valor
             this.instructions.push(`LDV ${node.name}`);
-            this.incrementActualIfIndex();
         } else if (typeof node === 'number' || typeof node === 'string') {
             // Si es un valor literal, simplemente carga el valor
             this.loadValue(node);
@@ -343,21 +286,39 @@ class Transpiler {
     * @method transpileFunctionCall
     * @param {Object} node El nodo que representa la llamada a la función.
     */
-    transpileFunctionCall(node) {
+    transpileFunctionCall(node, functionName) {
+        console.log('=============================================');
+        console.log(node);
+        console.log('Argumentos: ', node.args);
+
         node.args.forEach(arg => {
-            if (arg.type === 'BinaryExpression') {
-                this.loadValue(arg.right);
-                this.loadValue(arg.left);
-                this.loadBinaryOperator(arg.operator);
+            if (Array.isArray(arg) && Array.isArray(arg[0])) {
+                // Si el argumento es un arreglo de arreglos, extrae el valor.
+                const value = arg[0][0];
+                console.log('Argumento: ', value);
+                if (typeof value === 'number') {
+                    this.instructions.push(`LDV ${value}`);
+                } else {
+                    this.instructions.push(`LDV "${value}"`);
+                }
+            } else if (arg.type === 'BinaryExpression') {
+                // Maneja expresiones binarias como `x + 1`
+                const left = arg.left[0][0]; // Primer operando
+                const right = arg.right[0][0]; // Segundo operando
+                const operator = arg.operator;
+                console.log(`Argumento Binario: ${left} ${operator} ${right}`);
+                this.instructions.push(`LDV "${left}"`);
+                this.instructions.push(`LDV "${right}"`);
+                this.instructions.push(`OP "${operator}"`);
             } else {
-                this.loadValue(arg);
+                console.log('Argumento desconocido:', arg);
             }
         });
         
-        this.instructions.push(`LDF $${this.getFunctionClosure(node.functionName)}`);
-        this.incrementActualIfIndex();
-        this.instructions.push(`APP  ${node.args.length}                ; ${node.functionName}(${node.args.join(', ')})`);
-        this.incrementActualIfIndex();
+
+        this.instructions.push(`LDF $${functionName}`);
+        //this.instructions.push(`APP $${node.functionName} ${node.args.length} ; ${node.functionName}(${node.args.join(', ')})`);
+        this.instructions.push(`APP  ${node.args.length}  ; ${node.functionName}(${node.args.join(', ')})`);
     }
 
     /** 

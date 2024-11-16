@@ -131,17 +131,16 @@ class Loader extends biesGrammarVisitor {
     }
 
     /** 
-     * Procesa una declaración de retorno en una expresión, marcando la expresión como anidada,
-     * y agrega los detalles de la declaración de retorno a los atributos de la función actual 
-     * y a los resultados globales.
-     * 
-     * @method visitReturnStatement
-     * 
-     * @param {Object} ctx El contexto de la declaración de retorno, que contiene la expresión a retornar.
-     * @returns {Object} Un objeto que representa la declaración de retorno, con el tipo y el valor de la expresión.
+    * Procesa una declaración de retorno en una expresión y agrega los detalles de la declaración 
+    * de retorno a los atributos de la función actual y a los resultados globales.
+    * 
+    * @method visitReturnStatement
+    * 
+    * @param {Object} ctx El contexto de la declaración de retorno, que contiene la expresión a retornar.
+    * @returns {Object} Un objeto que representa la declaración de retorno, con el tipo y el valor de la expresión.
     */
     visitReturnStatement(ctx) {
-        const value = this.visit(ctx.expression()); // Marcar como anidada
+        const value = this.visit(ctx.expression());
         const returnDetails = {
             type: 'ReturnStatement',
             value
@@ -152,16 +151,16 @@ class Loader extends biesGrammarVisitor {
 
 
     /** 
-        * Procesa una declaración `let`, evaluando su expresión y manejando el caso donde la 
-        * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
-        * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración `let` 
-        * en los atributos de la función actual y los resultados globales.
-        * 
-        * @method visitLetDeclaration
-        * 
-        * @param {Object} ctx El contexto de la declaración `let`, que contiene el identificador y la expresión a evaluar.
-        * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
-        */
+    * Procesa una declaración `let`, evaluando su expresión y manejando el caso donde la 
+    * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
+    * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración `let` 
+    * en los atributos de la función actual y los resultados globales.
+    * 
+    * @method visitLetDeclaration
+    * 
+    * @param {Object} ctx El contexto de la declaración `let`, que contiene el identificador y la expresión a evaluar.
+    * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
+    */
     visitLetDeclaration(ctx) {
         const id = ctx.ID().getText();
         
@@ -186,7 +185,7 @@ class Loader extends biesGrammarVisitor {
                 name: id,
                 params: value.params
             };
-
+    
             // Agregamos la función al contexto
             this.addAttribute(functionDetails);
             
@@ -261,54 +260,14 @@ class Loader extends biesGrammarVisitor {
     */
     visitConstDeclaration(ctx) {
         const id = ctx.ID().getText();
-        
-        // Guardamos el estado original de processingLambda
-        const wasProcessingLambda = this.processingLambda;
-        this.processingLambda = true;
-        
-        // Visitamos la expresión asociada al `const` para obtener su valor
         const value = this.visit(ctx.expression());
-        
-        // Restauramos el estado de processingLambda
-        this.processingLambda = wasProcessingLambda;
-        
-        // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
-        if (value && value.type === 'LambdaExpression') {
-            // Inicializamos atributos de la función lambda
-            this.functionAttributes[id] = this.initializeAttributes();
-            
-            // Detalles de la función
-            const functionDetails = {
-                type: 'FunctionDeclaration',
-                name: id,
-                params: value.params
-            };
 
-            // Agregamos la función al contexto
-            this.addAttribute(functionDetails);
-            
-            // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
-            if (value.body) {
-                if (Array.isArray(value.body)) {
-                    // Si el cuerpo es un bloque de sentencias
-                    this.functionAttributes[id].secuencia.push(...value.body);
-                } else {
-                    // Si el cuerpo es una única expresión
-                    this.functionAttributes[id].secuencia.push(value.body);
-                }
-            }
-        }
-        
-        // Detalles de la declaración const
         const constDetails = {
             type: 'ConstDeclaration',
             id,
             value
         };
-        
-        // Guardamos la declaración const en el contexto
         this.addAttribute(constDetails);
-        
         return constDetails;
     }
 
@@ -466,32 +425,6 @@ class Loader extends biesGrammarVisitor {
         return null;
     }
 
-    
-    visitStatement(ctx) {
-        if (ctx.expressionStatement()) {
-            return this.visit(ctx.expressionStatement());
-        }
-        if (ctx.printStatement()) {
-            return this.visit(ctx.printStatement());
-        }
-        if (ctx.functionDeclaration()) {
-            return this.visit(ctx.functionDeclaration());
-        }
-        if (ctx.ifStatement()) {
-            return this.visit(ctx.ifStatement());
-        }
-        if (ctx.letDeclaration()) {
-            return this.visit(ctx.letDeclaration());
-        }
-        if (ctx.constDeclaration()) {
-            return this.visit(ctx.constDeclaration());
-        }
-        if (ctx.returnStatement()) {
-            return this.visit(ctx.returnStatement());
-        }
-        return null;
-    }
-
 
     /** 
     * Procesa una llamada a función, extrayendo el nombre de la función y los argumentos que le son pasados.
@@ -640,27 +573,27 @@ class Loader extends biesGrammarVisitor {
     */
     visitIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
-        const body = ctx.block() ? this.visit(ctx.block()) : null;
-    
         const ifDetails = {
             type: 'IfStatement',
-            condition,
-            body
+            condition
         };
-    
+
         this.addAttribute(ifDetails);
-    
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
         if (ctx.elseIfStatement()) {
-            const elseIfStatements = ctx.elseIfStatement().map(elseIfCtx => this.visit(elseIfCtx));
-            ifDetails.elseIfStatements = elseIfStatements;
+            this.visit(ctx.elseIfStatement());
         }
-    
+
         if (ctx.elseStatement()) {
-            ifDetails.elseStatement = this.visit(ctx.elseStatement());
+            this.visit(ctx.elseStatement());
         }
-    
+
         return ifDetails;
-    }    
+    }
     
     /** 
     * Procesa una declaración `else if`, evaluando la condición y registrando los detalles de la declaración `else if`.
@@ -674,18 +607,19 @@ class Loader extends biesGrammarVisitor {
     */
     visitElseIfStatement(ctx) {
         const condition = this.visit(ctx.expression());
-        const body = ctx.block() ? this.visit(ctx.block()) : null;
-    
         const elseIfDetails = {
             type: 'ElseIfStatement',
-            condition,
-            body
+            condition
         };
-    
+
         this.addAttribute(elseIfDetails);
-    
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
         return elseIfDetails;
-    }    
+    }
 
 
     /** 
@@ -698,38 +632,18 @@ class Loader extends biesGrammarVisitor {
     * @returns {Object} Un objeto que representa la declaración `else`, con el tipo `ElseStatement`.
     */
     visitElseStatement(ctx) {
-        const body = ctx.block() ? this.visit(ctx.block()) : null;
-    
         const elseDetails = {
-            type: 'ElseStatement',
-            body
+            type: 'ElseStatement'
         };
-    
-        this.addAttribute(elseDetails);
-    
-        return elseDetails;
-    }    
 
-    /**
-     * Procesa un bloque de instrucciones, visitando cada una de las instrucciones contenidas en el bloque.
-     * 
-     * @method visitBlock
-     * 
-     * @param {Object} ctx El contexto del bloque de instrucciones, que contiene una lista de instrucciones.
-     * @returns {Object} Un objeto que representa el bloque de instrucciones, con el tipo `Block`.
-    */ 
-    visitBlock(ctx) {
-        const statements = ctx.statement().map(stmt => this.visit(stmt));
-    
-        const blockDetails = {
-            type: 'Block',
-            statements
-        };
-    
-        this.addAttribute(blockDetails);
-    
-        return blockDetails;
-    }    
+        this.addAttribute(elseDetails);
+
+        if (ctx.block()) {
+            this.visit(ctx.block());
+        }
+
+        return elseDetails;
+    }
 
     
      /** 
