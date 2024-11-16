@@ -2,4 +2,8 @@ fun add(a, b) {
     return a + b;
 }
 
+let addLambda = (a, b) => a + b
+
 add(5, 10);
+
+addLambda(7,8)

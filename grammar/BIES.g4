@@ -31,13 +31,14 @@ statement: functionDeclaration
          | expressionStatement 
          | returnStatement
          | ifStatement
+         | block
          ;
 
 letDeclaration: 'let' ID '=' expression ';'? ;
 constDeclaration: 'const' ID '=' expression ';'? ;
 
-letInDeclaration: 'let' '{' (constDeclaration | letDeclaration)* '}' 'in' block ;
-
+// let-in Declaration
+letInDeclaration: 'let' '{' (constDeclaration | letDeclaration)* '}' 'in' block ';'? ;
 functionDeclaration: 'fun' ID '(' parameterList? ')' block;
 returnStatement: 'return' expression? ';'? ;
 expressionStatement: expression ';'? ;
@@ -48,9 +49,9 @@ parameterList: ID (',' ID)*;
 
 expression: assignment (( '+' | '-' | '*' | '/' | '**' ) assignment)*;
 
-assignment: comparison ('=' comparison)?;
+assignment: comparison ('=' comparison)?;  // Ajustada para permitir asignaciones
 
-comparison: factor (( '>' | '<' | '>=' | '<=' | '==' | '!=' ) factor)?;
+comparison: factor (('>' | '<' | '>=' | '<=' | '==' | '!=') factor)*;
 
 factor: INT 
       | FLOAT
@@ -74,6 +75,6 @@ elseIfStatement: 'else' 'if' '(' expression ')' block;
 
 elseStatement: ELSE block;
 
-lambdaExpression: '(' parameterList? ')' '=>' (block | expression) ; 
+lambdaExpression: '(' parameterList? ')' '=>' (block | expression); 
 
-listAccess: ID '[' expression ']' ;
+listAccess: ID '[' expression ']';
