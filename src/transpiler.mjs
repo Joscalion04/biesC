@@ -75,6 +75,10 @@ class Transpiler {
         console.log('Instrucciones: ', this.instructions);
     }
 
+    getInstructions() {
+        return this.instructions;
+    }
+
     // Transpilación de bloques
     transpileBlock(block) {
         const statements = Array.isArray(block.statements) ? block.statements : [block.statements];
@@ -776,6 +780,7 @@ class Transpiler {
     getTranspiledCode() {
         return this.instructions.join('\n');
     }
+
 }
 
 export default Transpiler;

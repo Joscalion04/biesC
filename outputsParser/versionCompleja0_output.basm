@@ -1,0 +1,8 @@
+=================================
+$FUN $0                ; main
+LDV "Testing helloworld Version 0 ***"
+PRN
+LDV "Hello World!"
+PRN
+HLT
+$END
