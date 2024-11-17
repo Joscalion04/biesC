@@ -138,8 +138,14 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
-	// Visit a parse tree produced by biesParser#inlineIfStatement.
-	visitInlineIfStatement(ctx) {
+	// Visit a parse tree produced by biesParser#ifThenStatement.
+	visitIfThenStatement(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#blockThen.
+	visitBlockThen(ctx) {
 	  return this.visitChildren(ctx);
 	}
 

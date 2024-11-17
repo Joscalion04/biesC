@@ -31,7 +31,8 @@ statement: functionDeclaration
          | expressionStatement 
          | returnStatement
          | ifStatement
-         | inlineIfStatement    // Agregamos la nueva regla aquí
+         | ifThenStatement  
+         | blockThen  
          | block
          ;
 
@@ -82,4 +83,6 @@ lambdaExpression: '(' parameterList? ')' '=>' (block | expression | lambdaExpres
 listAccess: ID '[' expression ']';
 
 // Nueva regla inline para if-then-else
-inlineIfStatement: 'if' '(' expression ')' 'then' statement 'else' statement;
+ifThenStatement: 'if' '(' expression ')' blockThen statement*;
+
+blockThen: 'then' statement* 'else';
