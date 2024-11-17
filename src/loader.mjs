@@ -180,15 +180,15 @@ class Loader extends biesGrammarVisitor {
         this.processingLambda = wasProcessingLambda;
         
         // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
-        if (value && value.type === 'LambdaExpression') {
+        if (value && value.type === 'Block') {
             // Inicializamos atributos de la función lambda
             this.functionAttributes[name] = this.initializeAttributes();
-            
+            //console.log(value.statements.value);
             // Detalles de la función
             const functionDetails = {
                 type: 'FunctionDeclaration',
                 name: name,
-                params: value.params,
+                params: value.statements.value.params,
                 id: this.attributeId++
             };
     
@@ -196,13 +196,13 @@ class Loader extends biesGrammarVisitor {
             this.addAttribute(functionDetails);
             
             // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
-            if (value.body) {
-                if (Array.isArray(value.body)) {
+            if (value) {
+                if (Array.isArray(value.statements.value.body)) {
                     // Si el cuerpo es un bloque de sentencias
-                    this.functionAttributes[name].secuencia.push(...value.body);
+                    this.functionAttributes[name].secuencia.push(...value);
                 } else {
                     // Si el cuerpo es una única expresión
-                    this.functionAttributes[name].secuencia.push(value.body);
+                    this.functionAttributes[name].secuencia.push(value);
                 }
             }
         }
@@ -246,10 +246,19 @@ class Loader extends biesGrammarVisitor {
             body = this.visit(ctx.expression());
         }
 
+
         return {
-            type: 'LambdaExpression',
-            params,
-            body,
+            type :"Block",
+            statements: {
+                type : "ReturnStatement",
+                value: {
+                    type: 'LambdaExpression',
+                    params,
+                    body,
+                    id: this.attributeId++
+                },
+                id: this.attributeId++
+            },
             id: this.attributeId++
         };
 
@@ -825,7 +834,6 @@ class Loader extends biesGrammarVisitor {
                     if (!this.functionAttributes[attr.id]) {
                         this.functionAttributes[attr.id] = this.initializeAttributes();
                     }
-                
                     // Guardamos el cuerpo de la lambda en la propiedad body
                     this.functionAttributes[attr.id].secuencia = functionBody;
                 }
@@ -834,7 +842,7 @@ class Loader extends biesGrammarVisitor {
     }
 
     getResults() {
-        this.transformLetDeclarationsWithLambdas();
+        //this.transformLetDeclarationsWithLambdas();
         for (const functionName in this.functionAttributes) {
             const attributes = this.functionAttributes[functionName];
             console.log(`Función: ${functionName}`);
