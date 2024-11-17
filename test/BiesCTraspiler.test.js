@@ -42,6 +42,9 @@ testFiles.forEach((file) => {
         const traspilerErrFile = path.join(traspilerOutputDir, `${file.replace(/\.bies$/, '')}_traspiled_errors.basm`);
 
         try {
+            // Espiar la salida de los console.log() en el método transpile
+            const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
             // Llamar a traspilerBIESCode para parsear y transpilar
             const result = await traspilerBIESCode(filePath);
             // Verificar que el resultado no sea nulo ni indefinido
@@ -49,11 +52,11 @@ testFiles.forEach((file) => {
             expect(result).not.toBeNull();
 
             // Guardar los resultados del parser en archivo de salida (outputsParser)
-            fs.writeFileSync(outFile, JSON.stringify(result));
+            fs.writeFileSync(outFile, result.join('\n'));  // Unir los elementos con saltos de línea
 
             // Verificar si hay errores en el parser y guardarlos (outputsParser)
             if (result.errors) {
-                fs.writeFileSync(errFile, result.errors);
+                fs.writeFileSync(errFile, result.errors.join('\n'));  // Unir los errores con saltos de línea
                 expect(fs.existsSync(errFile)).toBe(true);
             } else {
                 // Si no hay errores, eliminar archivo de errores si existe
@@ -64,11 +67,11 @@ testFiles.forEach((file) => {
             expect(fs.existsSync(outFile)).toBe(true);
 
             // Guardar los resultados del transpiler en archivo de salida (outputTraspiler)
-            fs.writeFileSync(traspilerOutFile, JSON.stringify(result));
+            fs.writeFileSync(traspilerOutFile, result.join('\n'));  // Unir los elementos con saltos de línea
 
             // Verificar si hay errores del transpiler y guardarlos (outputTraspiler)
             if (result.errors) {
-                fs.writeFileSync(traspilerErrFile, result.errors);
+                fs.writeFileSync(traspilerErrFile, result.errors.join('\n'));  // Unir los errores con saltos de línea
                 expect(fs.existsSync(traspilerErrFile)).toBe(true);
             } else {
                 // Si no hay errores, eliminar archivo de errores si existe
@@ -77,6 +80,11 @@ testFiles.forEach((file) => {
 
             // Verificar si el archivo de salida del transpiler existe (outputTraspiler)
             expect(fs.existsSync(traspilerOutFile)).toBe(true);
+
+            // Verificar la salida del transpiler
+            // Aquí puedes hacer que se verifiquen las salidas en el console.log
+            expect(logSpy).toHaveBeenCalled(); // Asegura que se haya llamado console.log
+            logSpy.mockRestore(); // Restaurar el spied de console.log después de la prueba
 
         } catch (err) {
             // Si ocurre un error en la ejecución de la prueba, lanzarlo
