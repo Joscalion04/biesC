@@ -1,0 +1,11 @@
+fun factorialRecursive(n) {
+    if (n == 0 || n == 1) {
+        return 1;  // Caso base: factorial de 0 o 1 es 1
+    }
+    return n * factorialRecursive(n - 1);  // Llamada recursiva
+}
+
+let numero = 5;
+print("Calculando el factorial de un número de manera recursiva:");
+let resultado = factorialRecursive(numero);
+print("El factorial de " + numero + " es: " + resultado);

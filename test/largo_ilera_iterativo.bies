@@ -1,0 +1,16 @@
+fun lengthIterative(hilera) {
+    let count = 0;
+    let i = 0;
+
+    while (i < len(hilera)) {
+        count = count + 1;
+        i = i + 1;
+    }
+
+    return count;
+}
+
+let hilera = "Hola, Mundo!";
+print("Calculando el largo de la hilera de manera iterativa:");
+let largo = lengthIterative(hilera);
+print("El largo de la hilera es: " + largo);
