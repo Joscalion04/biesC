@@ -23,6 +23,11 @@ En la terminal desde la raiz del proyecto ejecutar el siguiente comando para gen
 ## Commander
 En la terminal desde la raiz del proyecto ejecutar el siguiente comando para ejecutar un test en especifico:
 - "node commander.js --o salida.txt --e errores.txt --trace 1 source.js"
+- -o salida.txt: archivo de salida para las impresiones (sysout)
+- -e errores.txt: archivo para las salidas de error (syserr)
+- --trace 1: nivel de trace (0 o 1), 1 para mostrar el trace, 0 para no mostrarlo
+- casting.basm: archivo fuente .basm
+
 
 ## Testing
 En la terminal desde la raiz del proyecto ejecutar el siguiente comando para ejecutar todos los test:

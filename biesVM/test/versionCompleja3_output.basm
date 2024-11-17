@@ -7,14 +7,14 @@ Ejecutando el parser...
 Atributos procesados por Loader:
 Resultado del parser: [
   {
-    type: 'LambdaExpression',
+    type: 'FunctionDeclaration',
     name: 'splash',
     params: [ 'msg' ],
     body: { type: 'PrintStatement', args: [Array], id: 0 },
     id: 4
   },
   {
-    type: 'LambdaExpression',
+    type: 'FunctionDeclaration',
     name: 'greetings',
     params: [],
     body: 'Hello World!',

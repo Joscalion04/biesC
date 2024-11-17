@@ -7,6 +7,20 @@ Ejecutando el parser...
 Atributos procesados por Loader:
 Resultado del parser: [
   {
+    type: 'FunctionDeclaration',
+    name: 'splash',
+    params: [ 'msg' ],
+    body: { type: 'PrintStatement', args: [Array], id: 1 },
+    id: 5
+  },
+  {
+    type: 'FunctionDeclaration',
+    name: 'greetings',
+    params: [],
+    body: 'Hello World!',
+    id: 9
+  },
+  {
     type: 'LetInDeclaration',
     declarations: [ [Object], 'Hello World!' ],
     body: { type: 'Block', statements: [Array], id: 20 },

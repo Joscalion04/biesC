@@ -8,7 +8,7 @@ Atributos procesados por Loader:
 Resultado del parser: [
   { type: 'Block', statements: [ [Object] ], id: 5 },
   {
-    type: 'LambdaExpression',
+    type: 'FunctionDeclaration',
     name: 'max',
     params: [ 'x', 'y' ],
     body: { type: 'Block', statements: [Array], id: 5 },
