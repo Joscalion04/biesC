@@ -17,7 +17,8 @@ const testFiles = [
 
 const basePath = './test/test_funcionales';
 const outputDir = './outputsParser';
-const traspilerOutputDir = './outputTraspiler'; // Nueva carpeta para los resultados del transpiler
+const traspilerOutputDir = './outputTraspiler';
+const additionalOutputDir = '../biesVM/test'; // Carpeta adicional en `biesVM/test`
 
 // Crear las carpetas de outputs si no existen
 if (!fs.existsSync(outputDir)) {
@@ -26,11 +27,13 @@ if (!fs.existsSync(outputDir)) {
 if (!fs.existsSync(traspilerOutputDir)) {
     fs.mkdirSync(traspilerOutputDir, { recursive: true });
 }
+if (!fs.existsSync(additionalOutputDir)) {
+    fs.mkdirSync(additionalOutputDir, { recursive: true });
+}
 
 testFiles.forEach((file) => {
     test(`Testing ${file}`, async () => {
         const filePath = path.join(basePath, file);
-        // Verificar si el archivo existe
         expect(fs.existsSync(filePath)).toBe(true);
 
         // Rutas para los archivos de salida y errores (outputsParser)
@@ -41,55 +44,54 @@ testFiles.forEach((file) => {
         const traspilerOutFile = path.join(traspilerOutputDir, `${file.replace(/\.bies$/, '')}_traspiled_output.basm`);
         const traspilerErrFile = path.join(traspilerOutputDir, `${file.replace(/\.bies$/, '')}_traspiled_errors.basm`);
 
+        // Rutas adicionales para guardar en la carpeta `biesVM/test`
+        const additionalOutFile = path.join(additionalOutputDir, `${file.replace(/\.bies$/, '')}_output.basm`);
+        const additionalTraspilerOutFile = path.join(additionalOutputDir, `${file.replace(/\.bies$/, '')}_traspiled_output.basm`);
+
         try {
-            // Espiar la salida de los console.log() en el método transpile
             const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-            // Llamar a traspilerBIESCode para parsear y transpilar
+            // Llamar a `traspilerBIESCode` para parsear y transpilar
             const result = await traspilerBIESCode(filePath);
-            // Verificar que el resultado no sea nulo ni indefinido
             expect(result).toBeDefined();
             expect(result).not.toBeNull();
 
-            // Guardar los resultados del parser en archivo de salida (outputsParser)
-            fs.writeFileSync(outFile, result.join('\n'));  // Unir los elementos con saltos de línea
-
-            // Verificar si hay errores en el parser y guardarlos (outputsParser)
-            if (result.errors) {
-                fs.writeFileSync(errFile, result.errors.join('\n'));  // Unir los errores con saltos de línea
-                expect(fs.existsSync(errFile)).toBe(true);
-            } else {
-                // Si no hay errores, eliminar archivo de errores si existe
-                if (fs.existsSync(errFile)) fs.unlinkSync(errFile);
-            }
-
-            // Verificar si el archivo de salida existe (outputsParser)
+            // Guardar los resultados del parser en ambas ubicaciones (outputsParser y additionalOutputDir)
+            fs.writeFileSync(outFile, result.join('\n'));
+            fs.writeFileSync(additionalOutFile, result.join('\n'));
             expect(fs.existsSync(outFile)).toBe(true);
+            expect(fs.existsSync(additionalOutFile)).toBe(true);
 
-            // Guardar los resultados del transpiler en archivo de salida (outputTraspiler)
-            fs.writeFileSync(traspilerOutFile, result.join('\n'));  // Unir los elementos con saltos de línea
-
-            // Verificar si hay errores del transpiler y guardarlos (outputTraspiler)
+            // Guardar los errores del parser si existen (outputsParser y additionalOutputDir)
             if (result.errors) {
-                fs.writeFileSync(traspilerErrFile, result.errors.join('\n'));  // Unir los errores con saltos de línea
-                expect(fs.existsSync(traspilerErrFile)).toBe(true);
-            } else {
-                // Si no hay errores, eliminar archivo de errores si existe
-                if (fs.existsSync(traspilerErrFile)) fs.unlinkSync(traspilerErrFile);
+                fs.writeFileSync(errFile, result.errors.join('\n'));
+                fs.writeFileSync(path.join(additionalOutputDir, `${file.replace(/\.bies$/, '')}_errors.basm`), result.errors.join('\n'));
+                expect(fs.existsSync(errFile)).toBe(true);
+            } else if (fs.existsSync(errFile)) {
+                fs.unlinkSync(errFile);
             }
 
-            // Verificar si el archivo de salida del transpiler existe (outputTraspiler)
+            // Guardar los resultados del transpiler en ambas ubicaciones (outputTraspiler y additionalOutputDir)
+            fs.writeFileSync(traspilerOutFile, result.join('\n'));
+            fs.writeFileSync(additionalTraspilerOutFile, result.join('\n'));
             expect(fs.existsSync(traspilerOutFile)).toBe(true);
+            expect(fs.existsSync(additionalTraspilerOutFile)).toBe(true);
 
-            // Verificar la salida del transpiler
-            // Aquí puedes hacer que se verifiquen las salidas en el console.log
-            expect(logSpy).toHaveBeenCalled(); // Asegura que se haya llamado console.log
-            logSpy.mockRestore(); // Restaurar el spied de console.log después de la prueba
+            // Guardar los errores del transpiler si existen (outputTraspiler y additionalOutputDir)
+            if (result.errors) {
+                fs.writeFileSync(traspilerErrFile, result.errors.join('\n'));
+                fs.writeFileSync(path.join(additionalOutputDir, `${file.replace(/\.bies$/, '')}_traspiled_errors.basm`), result.errors.join('\n'));
+                expect(fs.existsSync(traspilerErrFile)).toBe(true);
+            } else if (fs.existsSync(traspilerErrFile)) {
+                fs.unlinkSync(traspilerErrFile);
+            }
+
+            expect(logSpy).toHaveBeenCalled();
+            logSpy.mockRestore();
 
         } catch (err) {
-            // Si ocurre un error en la ejecución de la prueba, lanzarlo
             console.error(`Error procesando el archivo ${file}:`, err);
-            throw err; // Esto hará que Jest registre el fallo en el test
+            throw err;
         }
     });
 });

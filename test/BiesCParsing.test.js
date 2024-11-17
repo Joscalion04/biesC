@@ -22,9 +22,15 @@ const basePath = './test/test_funcionales';
 // Ruta para la carpeta de outputs
 const outputDir = './outputsParser';
 
-// Crear la carpeta de outputs si no existe
+// Ruta adicional para guardar la salida en la carpeta test de biesVM
+const additionalOutputDir = './biesVM/test';
+
+// Crear las carpetas de outputs si no existen
 if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
+}
+if (!fs.existsSync(additionalOutputDir)) {
+    fs.mkdirSync(additionalOutputDir, { recursive: true });
 }
 
 // Función para eliminar caracteres de escape de color
@@ -43,6 +49,9 @@ testFiles.forEach((file) => {
         const outFile = path.join(outputDir, `${file.replace(/\.bies$/, '')}_output.basm`);
         const errFile = path.join(outputDir, `${file.replace(/\.bies$/, '')}_errors.basm`);
 
+        // Ruta de salida adicional en la carpeta test de biesVM
+        const additionalOutFile = path.join(additionalOutputDir, `${file.replace(/\.bies$/, '')}_output.basm`);
+
         // Construir el comando para ejecutar `commander.js`
         const command = `node ./commander.js --o ${outFile} --e ${errFile} ${filePath}`;
 
@@ -56,7 +65,9 @@ testFiles.forEach((file) => {
                 if (stdout) {
                     const cleanStdout = removeColorCodes(stdout);
                     fs.writeFileSync(outFile, cleanStdout);
+                    fs.writeFileSync(additionalOutFile, cleanStdout); // Guardar también en la carpeta test de biesVM
                     expect(fs.existsSync(outFile)).toBe(true);
+                    expect(fs.existsSync(additionalOutFile)).toBe(true);
                 }
 
                 // Limpiar los códigos de color antes de guardar en el archivo de errores

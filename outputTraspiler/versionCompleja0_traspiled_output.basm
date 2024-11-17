@@ -1,4 +1,3 @@
-=================================
 $FUN $0                ; main
 LDV "Testing helloworld Version 0 ***"
 PRN
