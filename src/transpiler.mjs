@@ -426,7 +426,7 @@ class Transpiler {
             // Manejar valores literales (números y cadenas)
             if (typeof value === 'number' || typeof value === 'string') {
                 this.loadLiteral(value);
-    
+                
                 if (type === 'declaration') {
                     this.addBinding(name, value);
                     bindingIndex = this.getBindingIndex(name);
@@ -435,7 +435,7 @@ class Transpiler {
             }
             // Para valores complejos (funciones, expresiones binarias, etc.)
             else if (typeof value === 'object') {
-                this.handleComplexValue(value, name);
+                this.handleComplexValue(value, name, type);
             }
         } else {
             // Si el binding ya existe, cargamos desde el índice
@@ -463,11 +463,11 @@ class Transpiler {
     }
     
     // Función auxiliar para manejar valores complejos
-    handleComplexValue(value, name) {
+    handleComplexValue(value, name, type) {
         if (value.type === 'FunctionCall') {
             this.transpileFunctionCall(value);
         } else if (value.type === 'BinaryExpression') {
-            this.transpileExpression(value, name);
+            this.transpileExpression(value, name, type);
         } else {
             this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
             this.incrementActualIfIndex();
@@ -595,24 +595,42 @@ class Transpiler {
     * @method transpileExpression
     * @param {Object} node El nodo que representa la expresión.
     */
-    transpileExpression(node, name) {
+    transpileExpression(node, name, type) {
         if (node.type === 'BinaryExpression') {
-            const processOperand = (operand, nodeName) => {
-                this.transpileExpression(operand, nodeName);  // No hace falta convertir a cadena
-            };
-            
+            const processOperand = (operand, nodeName) => this.transpileExpression(operand, nodeName);
+
             // Procesa ambos operandos
-            processOperand(node.left, node.name ? node.name : '');
-            processOperand(node.right, node.name ? node.name : '');
-            
-            // Aplica el operador binario al resultado de los operandos
+            const left = processOperand(node.left, node.name || '');
+            const right = processOperand(node.right, node.name || '');
+
+            // Determina si los operandos incluyen cadenas y aplica el operador correspondiente
             const isStringOperand = typeof node.left === 'string' || typeof node.right === 'string';
             if (isStringOperand && node.operator === '+') {
-                this.instructions.push('CAT');
-                this.incrementActualIfIndex();
+                this.instructions.push('CAT'); // Concatenación para cadenas
             } else {
-                this.loadBinaryOperator(node.operator);
-            }                   
+                this.loadBinaryOperator(node.operator); // Carga el operador binario correspondiente
+            }
+            this.incrementActualIfIndex();
+
+            if (type === 'declaration') {
+                const evaluateBinaryOperation = (op, leftVal, rightVal) => {
+                    switch (op) {
+                        case '+': return leftVal + rightVal;
+                        case '-': return leftVal - rightVal;
+                        case '*': return leftVal * rightVal;
+                        case '/': return leftVal / rightVal;
+                        default: throw new Error(`Operador desconocido: ${op}`);
+                    }
+                };
+
+                // Evalúa el valor de la operación
+                const val = evaluateBinaryOperation(node.operator, left, right);
+
+                // Agrega el resultado al binding y lo asocia
+                this.addBinding(name, val);
+                this.bindToIndex(this.getBindingIndex(name), name);
+            }
+
         } else if (node.type === 'Identifier') {
             // Si es una variable, carga su valor
             this.instructions.push(`LDV ${node.name}`);
@@ -620,6 +638,7 @@ class Transpiler {
         } else if (typeof node === 'number' || typeof node === 'string') {
             // Si es un valor literal, simplemente carga el valor
             this.loadValue(node, name);
+            return node;
         } else {
             throw new Error(`Tipo de nodo desconocido o no soportado: ${JSON.stringify(node)}`);
         }
