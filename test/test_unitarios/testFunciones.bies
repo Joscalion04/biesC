@@ -1,5 +1,6 @@
 
 //let add = x => x + 1
-let add2 = x => y => x + y 
+//let add2 = (x) => (y) => x + y 
+//let mult = (x, y) => x + y
 
-let mult = (x, y) => z => x + y + z
+if(5<1)  then print("Hola") else print("hola2")

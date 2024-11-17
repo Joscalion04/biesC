@@ -4,8 +4,9 @@
     const greetings = () =>
         let {
             const greet = input("Enter greeting>")
-        } in
+        } in {
             if (len(greet) == 0 ) then "Hello World!" else greet
+        }
  } in {
     let version = 5 ** 5 / (4 + 1);
     splash("Testing helloworld Version " + version + " ***");
