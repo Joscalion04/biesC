@@ -261,9 +261,8 @@ class Loader extends biesGrammarVisitor {
             }
             return lambda;
         };
-
         // Procesamos la lambda inicial y sus anidaciones
-        const functionDetails = processNestedLambda(lambda, name);
+        const functionDetails = processNestedLambda(lambda.body, name);
 
         // Agregamos la lambda principal al contexto global
         const mainFunctionDetails = {
@@ -339,14 +338,20 @@ class Loader extends biesGrammarVisitor {
             body = this.visit(ctx.ifThenStatement());
         }
 
-        const lambdaDetails = {
-            type: 'LambdaExpression',
-            params,
-            body,
+        return {
+            type: 'Block',
+            statements: {
+                type: 'ReturnStatement',
+                value: {
+                    type: 'LambdaExpression',
+                    params,
+                    body,
+                    id: this.attributeId++
+                },
+                id: this.attributeId++
+            },
             id: this.attributeId++
         };
-
-        return lambdaDetails;
     }
 
 
