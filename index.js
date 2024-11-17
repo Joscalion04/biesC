@@ -11,8 +11,9 @@ import fs from 'fs'; // Importar el módulo fs para trabajar con archivos
 */
 
 // Ejecutar el parser con el archivo de prueba test1.bies
-//parseBIESCode("./test/test_funcionales/versionCompleja2.bies");
-parseBIESCode("./test/test_funcionales/versionCompleja4.bies");
+//parseBIESCode("./test/test_funcionales/versionCompleja3.bies");
+parseBIESCode("./test/test_unitarios/testFunciones.bies");
+
 
 // Ejecutar el parser con el archivo pasado por parámetro desde el terminal con ayuda del commander
 export default function runParser(filePath) {
