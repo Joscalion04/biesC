@@ -171,29 +171,29 @@ class Loader extends biesGrammarVisitor {
      */
     processDeclaration(ctx, declarationType) {
         const name = ctx.ID().getText();
-        
+    
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
 
-        // Visitamos la expresión asociada a la declaración para obtener su valor
+        // Visitamos la expresión asociada a la declaración
         const value = this.visit(ctx.expression());
+        
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
 
-        const lambda = value.statements?.value;
-
-        // Si el valor es una LambdaExpression, la procesamos
-        if (lambda && lambda.type === 'LambdaExpression') {
-             return this.processLambda(name, lambda, value);
+        // Si es una lambda o una lambda anidada
+        if (value && (value.type === 'LambdaExpression' || 
+            (value.type === 'BinaryExpression' && value.left?.type === 'LambdaExpression'))) {
+            return this.processLambda(name, value, value);
         } else {
-            // Guardamos los detalles de la declaración en el contexto
             const details = {
                 type: declarationType,
                 name,
                 value,
                 id: this.attributeId++
             };
+            
             if (this.scopeStack.length === 0) {
                 this.addAttribute(details);
             }
@@ -213,22 +213,43 @@ class Loader extends biesGrammarVisitor {
     processLambda(name, lambda, value) {
         // Inicializamos atributos de la función lambda
         this.functionAttributes[name] = this.initializeAttributes();
-        // Detalles de la función
+        
+        // Extraemos los parámetros y el cuerpo
+        let params = [];
+        let body;
+
+        if (lambda.type === 'LambdaExpression') {
+            params = lambda.params;
+            body = lambda.body;
+        } else if (lambda.type === 'BinaryExpression') {
+            // Para casos de lambdas anidadas, construimos la cadena de parámetros
+            let currentLambda = lambda;
+            while (currentLambda && currentLambda.type === 'BinaryExpression') {
+                if (currentLambda.left?.type === 'LambdaExpression') {
+                    params = params.concat(currentLambda.left.params);
+                    currentLambda = currentLambda.right;
+                } else {
+                    break;
+                }
+            }
+            body = currentLambda;
+        }
+
         const functionDetails = {
             type: 'FunctionDeclaration',
             name,
-            params: lambda.params,
+            params,
+            body,
             id: this.attributeId++
         };
 
-        // Agregamos la función al contexto
         if (this.scopeStack.length === 0) {
             this.addAttribute(functionDetails);
         }
 
-        // Procesamos el cuerpo de la lambda
-        const body = Array.isArray(lambda.body) ? lambda.body : [value];
-        this.functionAttributes[name].secuencia.push(...body);
+        // Agregamos el cuerpo de la lambda a la secuencia de la función
+        this.functionAttributes[name].secuencia.push(value);
+
         return functionDetails;
     }
 
@@ -266,28 +287,39 @@ class Loader extends biesGrammarVisitor {
      * @returns {Object} Un objeto que representa la expresión lambda.
      */
     visitLambdaExpression(ctx) {
-        const params = ctx.parameterList()
-            ? ctx.parameterList().ID().map(param => param.getText())
-            : [];
-            
-        const body = ctx.block()
-            ? ctx.block().statement().map(stmt => this.visit(stmt))
-            : this.visit(ctx.expression());
+        let params = [];
+        let body;
 
-        return {
-            type: 'Block',
-            statements: {
-                type: 'ReturnStatement',
-                value: {
-                    type: 'LambdaExpression',
-                    params,
-                    body,
-                    id: this.attributeId++
-                },
-                id: this.attributeId++
-            },
+        // Manejo de parámetros
+        if (ctx.parameterList()) {
+            params = ctx.parameterList().ID().map(param => param.getText());
+        }
+
+        // Manejo del cuerpo de la lambda
+        if (ctx.block()) {
+            body = this.visit(ctx.block());
+        } else if (ctx.lambdaExpression()) {
+            // Para lambdas anidadas como 'x => y => x + y'
+            body = this.visit(ctx.lambdaExpression());
+        } else if (ctx.expression()) {
+            body = this.visit(ctx.expression());
+        } else if (ctx.ifThenStatement()) {
+            body = this.visit(ctx.ifThenStatement());
+        }
+
+        const lambdaDetails = {
+            type: 'LambdaExpression',
+            params,
+            body,
             id: this.attributeId++
         };
+
+        // Solo agregamos al contexto si no estamos procesando una lambda anidada
+        if (!this.processingLambda && this.scopeStack.length === 0) {
+            this.addAttribute(lambdaDetails);
+        }
+
+        return lambdaDetails;
     }
 
 
