@@ -44,9 +44,9 @@ class Transpiler {
         // Recorrer cada función y procesar sus atributos
         for (const functionName in this.functionAttributes) {
 
-            console.log('='.repeat(100));
-            console.log('Nombre de la función: ', functionName);
-            console.log('='.repeat(100));
+            // console.log('='.repeat(100));
+            // console.log('Nombre de la función: ', functionName);
+            // console.log('='.repeat(100));
 
             if (functionName === 'main') {
                 this.bindings.unshift({fun: functionName, binding: []});
