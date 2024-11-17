@@ -87,7 +87,7 @@ function parseBIESCode(inputFile) {
   * @method transpile
   */
   // NO lo descomenten 
-  //const transpileResult = transpiler.transpile();
+  const transpileResult = transpiler.transpile();
   /**
    * Obtiene los resultados del comando ejecutado por el cargador (loader).
    * Que pueden incluir datos o resultados de una operación anterior.

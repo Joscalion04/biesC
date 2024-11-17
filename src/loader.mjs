@@ -176,7 +176,7 @@ class Loader extends biesGrammarVisitor {
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
-
+        
         // Visitamos la expresión asociada a la declaración
         const value = this.visit(ctx.expression());
         
@@ -266,16 +266,14 @@ class Loader extends biesGrammarVisitor {
 
         // Agregamos la lambda principal al contexto global
         const mainFunctionDetails = {
-            type: 'LambdaExpression',
+            type: 'FunctionDeclaration',
             name,
             params: lambda.type === 'LambdaExpression' ? lambda.params : [],
             body: functionDetails,
             id: this.attributeId++
         };
 
-        if (this.scopeStack.length === 0) {
-            this.addAttribute(mainFunctionDetails);
-        }
+        this.addAttribute(mainFunctionDetails);
 
         // Procesamos el cuerpo de la lambda
         const body = Array.isArray(lambda.body) ? lambda.body : [value];
@@ -644,7 +642,7 @@ class Loader extends biesGrammarVisitor {
         if (this.scopeStack.length === 0) {
             this.addAttribute(functionDetails);
         }
-
+        
         // Crear nuevo contexto de función si no existe
         if (!this.functionAttributes[functionName]) {
             this.functionAttributes[functionName] = this.initializeAttributes();

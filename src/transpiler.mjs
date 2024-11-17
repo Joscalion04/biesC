@@ -44,9 +44,9 @@ class Transpiler {
         // Recorrer cada función y procesar sus atributos
         for (const functionName in this.functionAttributes) {
 
-            console.log('='.repeat(100));
-            console.log('Nombre de la función: ', functionName);
-            console.log('='.repeat(100));
+            // console.log('='.repeat(100));
+            // console.log('Nombre de la función: ', functionName);
+            // console.log('='.repeat(100));
 
             if (functionName === 'main') {
                 this.bindings.unshift({fun: functionName, binding: []});
@@ -60,7 +60,6 @@ class Transpiler {
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
 
             const attributes = this.functionAttributes[functionName].secuencia;
-            // console.log('Atributos: ', attributes);
 
             // Recorrer los atributos de la función
             attributes.forEach((attribute, index) => this.processAttribute(attribute, attributes, index, 'function'));
@@ -92,7 +91,7 @@ class Transpiler {
 
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type) {
-        console.log('Atributo: ', attribute);
+        // console.log('Atributo: ', attribute);
         if (this.attributesSet.has(attribute.id)) {
             return;
         }
@@ -125,6 +124,9 @@ class Transpiler {
                 this.exitCounter = [];
             } break;
             case 'IfThenStatement': {
+                if (attribute.id === 4) {
+                    console.log('Atributo: ', attribute);
+                }
                 if (this.attributesSet.has(attribute.id)) {
                     return;
                 }
@@ -132,23 +134,36 @@ class Transpiler {
                 this.transpileIfThenStatement(attribute);
             } break;
             case 'Block': {
-                for (let j = index; j < attributes.length; j++) {
-                    if (
-                        attributes[j].type === 'IfStatement' ||
-                        attributes[j].type === 'ElseIfStatement' || 
-                        attributes[j].type === 'ElseStatement'
-                    ) {
-                        if (attributes[j].body.id === attribute.id) {
-                            break;
+                const found = this.isAttributeInFutureBlocks(attribute, attributes, index);
+
+                if (!found) {
+                    for (let j = index; j < attributes.length; j++) {
+                        const currentAttribute = attributes[j];
+                        
+                        // Verificar si es un bloque de tipo condicional
+                        if (['IfStatement', 'ElseIfStatement', 'ElseStatement', 'IfThenStatement'].includes(currentAttribute.type)) {
+                            const bodyId = currentAttribute.body ? currentAttribute.body.id : currentAttribute.id;
+                            if (bodyId === attribute.id) {
+                                break;
+                            }
+                        }
+                
+                        // Verificar si el atributo no está en el conjunto y procesarlo
+                        if (!this.attributesSet.has(attribute.id)) {
+                            const isLastAttribute = attributes[j + 1] === undefined;
+                            if (attribute.id !== currentAttribute.id || isLastAttribute) {
+                                this.attributesSet.add(attribute.id);
+                                this.transpileBlock(attribute);
+                            }
                         }
                     }
+                
+                    // Verificar una última vez si el atributo ya fue procesado
                     if (!this.attributesSet.has(attribute.id)) {
-                        if (attribute.id !== attributes[j].id || attributes[j+1] === undefined) {
-                            this.attributesSet.add(attribute.id);
-                            this.transpileBlock(attribute);
-                        }
+                        this.attributesSet.add(attribute.id);
+                        this.transpileBlock(attribute);
                     }
-                }
+                }                
              } break;
             case 'BinaryExpression': {
                 if (this.attributesSet.has(attribute.id)) {
@@ -167,6 +182,7 @@ class Transpiler {
                 }
             } break;
             case 'PrintStatement':{
+                // busca el id del atributo en las declaraciones guardadas
                 this.transpilePrintStatement(attribute);
             } break;
             case 'ExpressionStatement': {
@@ -213,7 +229,7 @@ class Transpiler {
     }
 
     // Manejar expresiones lambda
-    handleLambdaExpression(node, attributes, index) {
+    handleLambdaExpression(node, attributes, index) {   
         if (this.attributesSet.has(node.id)) {
             return;
         }
@@ -354,6 +370,16 @@ class Transpiler {
                             return true; // Atributo encontrado
                         }
                     }
+                }
+            } else if (futureAttribute.type === 'LambdaExpression'){
+                // Verificar si el atributo está dentro del cuerpo de la función lambda
+                if (futureAttribute.body.id === currentAttribute.id) {
+                    return true; // Atributo encontrado
+                }
+            } else if (futureAttribute.type === 'FunctionDeclaration') {
+                console.log('Atributo actual: ', currentAttribute);
+                if (futureAttribute.body.id === currentAttribute.id) {
+                    return true; // Atributo encontrado
                 }
             }
         }
