@@ -155,102 +155,123 @@ class Loader extends biesGrammarVisitor {
     }
 
 
-    /** 
-    * Procesa una declaración `let`, evaluando su expresión y manejando el caso donde la 
-    * expresión es una lambda. Si es una lambda, la registra como una declaración de función 
-    * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración `let` 
-    * en los atributos de la función actual y los resultados globales.
-    * 
-    * @method visitLetDeclaration
-    * 
-    * @param {Object} ctx El contexto de la declaración `let`, que contiene el identificador y la expresión a evaluar.
-    * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
-    */
-    visitLetDeclaration(ctx) {
+    /**
+     * Procesa una declaración (`let` o `const`), evaluando su expresión y manejando el caso
+     * donde la expresión es una lambda. Si es una lambda, la registra como una declaración de función
+     * y agrega su cuerpo al contexto. Además, guarda los detalles de la declaración en los atributos 
+     * de la función actual y los resultados globales.
+     * 
+     * @method processDeclaration
+     * 
+     * @param {Object} ctx El contexto de la declaración, que contiene el identificador y la expresión a evaluar.
+     * @param {string} declarationType El tipo de declaración (`LetDeclaration` o `ConstDeclaration`).
+     * @returns {Object} Un objeto que representa la declaración, con el tipo, el identificador y el valor evaluado.
+     */
+    processDeclaration(ctx, declarationType) {
         const name = ctx.ID().getText();
-        
+
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
-        
-        // Visitamos la expresión asociada al `let` para obtener su valor
+
+        // Visitamos la expresión asociada a la declaración para obtener su valor
         const value = this.visit(ctx.expression());
-        
+
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
-        
-        // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
-        if (value && value.type === 'Block') {
-            // Inicializamos atributos de la función lambda
-            this.functionAttributes[name] = this.initializeAttributes();
-            //console.log(value.statements.value);
-            // Detalles de la función
-            const functionDetails = {
-                type: 'FunctionDeclaration',
-                name: name,
-                params: value.statements.value.params,
+
+        const lambda = value.statements?.value;
+
+        // Si el valor es una LambdaExpression, la procesamos
+        if (lambda && lambda.type === 'LambdaExpression') {
+            this.processLambda(name, lambda, value);
+        } else {
+            // Guardamos los detalles de la declaración en el contexto
+            const details = {
+                type: declarationType,
+                name,
+                value,
                 id: this.attributeId++
             };
-    
-            // Agregamos la función al contexto
-            this.addAttribute(functionDetails);
-            
-            // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
-            if (value) {
-                if (Array.isArray(value.statements.value.body)) {
-                    // Si el cuerpo es un bloque de sentencias
-                    this.functionAttributes[name].secuencia.push(...value);
-                } else {
-                    // Si el cuerpo es una única expresión
-                    this.functionAttributes[name].secuencia.push(value);
-                }
-            }
+            this.addAttribute(details);
+            return details;
         }
-        
-        // Detalles de la declaración let
-        const letDetails = {
-            type: 'LetDeclaration',
+    }
+
+    /**
+     * Maneja una expresión de tipo `Lambda`, registrándola como una función y procesando su cuerpo.
+     * 
+     * @method processLambda
+     * 
+     * @param {string} name El nombre asociado a la lambda.
+     * @param {Object} lambda La expresión lambda procesada.
+     * @param {Object} value El valor completo de la lambda, incluyendo sus detalles.
+     */
+    processLambda(name, lambda, value) {
+        // Inicializamos atributos de la función lambda
+        this.functionAttributes[name] = this.initializeAttributes();
+        // Detalles de la función
+        const functionDetails = {
+            type: 'FunctionDeclaration',
             name,
-            value,
+            params: lambda.params,
             id: this.attributeId++
         };
 
-        // Guardamos la declaración let en el contexto
-        this.addAttribute(letDetails);
-        
-        return letDetails;
+        // Agregamos la función al contexto
+        this.addAttribute(functionDetails);
+
+        // Procesamos el cuerpo de la lambda
+        const body = Array.isArray(lambda.body) ? lambda.body : [value];
+        this.functionAttributes[name].secuencia.push(...body);
     }
 
-    /** 
-    * Procesa una expresión de tipo `Lambda`, extrayendo sus parámetros y cuerpo. 
-    * Si la expresión tiene un bloque de instrucciones, las procesa, de lo contrario, 
-    * evalúa la expresión. Retorna un objeto que representa la lambda con su tipo, 
-    * parámetros y cuerpo.
-    * 
-    * @method visitLambdaExpression
-    * 
-    * @param {Object} ctx El contexto de la expresión lambda, que contiene los parámetros y el cuerpo de la lambda.
-    * @returns {Object} Un objeto que representa la expresión lambda, con el tipo, los parámetros y el cuerpo.
-    * @returns {string[]} return.params Los parámetros de la lambda.
-    * @returns {Array|Object} return.body El cuerpo de la lambda, que puede ser un array de instrucciones o una expresión.
-    */
+    /**
+     * Procesa una declaración `let`.
+     * 
+     * @method visitLetDeclaration
+     * 
+     * @param {Object} ctx El contexto de la declaración `let`.
+     * @returns {Object} Un objeto que representa la declaración `let`.
+     */
+    visitLetDeclaration(ctx) {
+        return this.processDeclaration(ctx, 'LetDeclaration');
+    }
+
+    /**
+     * Procesa una declaración `const`.
+     * 
+     * @method visitConstDeclaration
+     * 
+     * @param {Object} ctx El contexto de la declaración `const`.
+     * @returns {Object} Un objeto que representa la declaración `const`.
+     */
+    visitConstDeclaration(ctx) {
+        return this.processDeclaration(ctx, 'ConstDeclaration');
+    }
+
+    /**
+     * Procesa una expresión de tipo `Lambda`, extrayendo sus parámetros y cuerpo.
+     * Retorna un objeto que representa la lambda con su tipo, parámetros y cuerpo.
+     * 
+     * @method visitLambdaExpression
+     * 
+     * @param {Object} ctx El contexto de la expresión lambda.
+     * @returns {Object} Un objeto que representa la expresión lambda.
+     */
     visitLambdaExpression(ctx) {
         const params = ctx.parameterList()
             ? ctx.parameterList().ID().map(param => param.getText())
             : [];
             
-        let body;
-        if (ctx.block()) {
-            body = ctx.block().statement().map(stmt => this.visit(stmt));
-        } else if (ctx.expression()) {
-            body = this.visit(ctx.expression());
-        }
-
+        const body = ctx.block()
+            ? ctx.block().statement().map(stmt => this.visit(stmt))
+            : this.visit(ctx.expression());
 
         return {
-            type :"Block",
+            type: 'Block',
             statements: {
-                type : "ReturnStatement",
+                type: 'ReturnStatement',
                 value: {
                     type: 'LambdaExpression',
                     params,
@@ -261,71 +282,8 @@ class Loader extends biesGrammarVisitor {
             },
             id: this.attributeId++
         };
-
     }
 
-
-    /** 
-    * Procesa una declaración de constante `const`, evaluando su expresión y registrando los detalles
-    * de la constante en los atributos de la función actual y en los resultados globales.
-    * Este método obtiene el identificador y el valor de la constante, y los guarda como parte
-    * de la declaración de constante.
-    * 
-    * @method visitConstDeclaration
-    * 
-    * @param {Object} ctx El contexto de la declaración `const`, que contiene el identificador y la expresión de la constante.
-    * @returns {Object} Un objeto que representa la declaración `const`, con el tipo, el identificador y el valor evaluado.
-    */
-    visitConstDeclaration(ctx) {
-        const id = ctx.ID().getText();
-        
-        // Guardamos el estado original de processingLambda
-        const wasProcessingLambda = this.processingLambda;
-        this.processingLambda = true;
-        
-        // Visitamos la expresión asociada al `const` para obtener su valor
-        const value = this.visit(ctx.expression());
-
-        // Restauramos el estado de processingLambda
-        this.processingLambda = wasProcessingLambda;
-        
-        // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
-        if (value && value.type === 'LambdaExpression') {
-            // Inicializamos atributos de la función lambda
-            this.functionAttributes[id] = this.initializeAttributes();
-            
-            // Detalles de la función
-            const functionDetails = {
-                type: 'FunctionDeclaration',
-                name: id,
-                params: value.params,
-                id: this.attributeId++
-            };
-
-            // Agregamos la función al contexto
-            this.addAttribute(functionDetails);
-            
-            // Si la lambda tiene cuerpo, lo agregamos a la secuencia de la función
-            if (value.body) {
-                if (Array.isArray(value.body)) {
-                    // Si el cuerpo es un bloque de sentencias
-                    this.functionAttributes[id].secuencia.push(...value.body);
-                } else {
-                    // Si el cuerpo es una única expresión
-                    this.functionAttributes[id].secuencia.push(value.body);
-                }
-            }
-        }
-
-        const constDetails = {
-            type: 'ConstDeclaration',
-            id,
-            value,
-            id: this.attributeId++
-        };
-        this.addAttribute(constDetails);
-        return constDetails;
-    }
 
     /** 
     * Procesa una expresión que puede contener múltiples asignaciones, evaluando cada una de ellas

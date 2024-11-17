@@ -42,13 +42,17 @@ class Transpiler {
         // Recorrer cada función y procesar sus atributos
         for (const functionName in this.functionAttributes) {
 
-            console.log('='.repeat(100));
-            console.log('Nombre de la función: ', functionName);
-            console.log('='.repeat(100));
+            // console.log('='.repeat(100));
+            // console.log('Nombre de la función: ', functionName);
+            // console.log('='.repeat(100));
 
             if (functionName === 'main') {
                 this.bindings.unshift({fun: functionName, binding: []});
             }
+
+            const bindingIndex = this.getBindingIndexByName(functionName);
+            // ponemos el binding en la primera posición
+            this.bindings.unshift(this.bindings.splice(bindingIndex, 1)[0]);
             
             this.instructions.push('=================================');
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
@@ -70,8 +74,9 @@ class Transpiler {
 
     // Transpilación de bloques
     transpileBlock(block) {
-        block.statements.forEach(statement => this.processAttribute(statement, block.statements, null, 'block'));
-    }
+        const statements = Array.isArray(block.statements) ? block.statements : [block.statements];
+        statements.forEach(statement => this.processAttribute(statement, statements, null, 'block'));
+    }    
 
     // Transpilado de valores (declaraciones, expresiones, etc.)
     transpileValue(value) {
@@ -80,7 +85,7 @@ class Transpiler {
 
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type) {
-        console.log('Atributo: ', attribute);
+        // console.log('Atributo: ', attribute);
         if (this.attributesSet.has(attribute.id)) {
             return;
         }
@@ -152,11 +157,29 @@ class Transpiler {
                 this.attributesSet.add(attribute.id);
                 this.functionDeclarations.push(attribute);
             } break;
+            case 'LambdaExpression': {
+                if (type === 'value') {
+                    this.handleLambdaExpression(attribute, attributes, index);
+                }
+            } break;
             case 'ElseIfStatement':
             case 'ElseStatement':
                 break;
             default:
                 console.warn('Tipo de atributo desconocido:', attribute.type);
+        }
+    }
+
+    // Manejar expresiones lambda
+    handleLambdaExpression(node, attributes, index) {
+        if (this.attributesSet.has(node.id)) {
+            return;
+        }
+        this.attributesSet.add(node.id);
+        if (typeof node.body === 'object') {
+            this.processAttribute(node.body, attributes, index, 'function');
+        } else {
+            this.loadValue(node.body, node.name ? node.name : '');
         }
     }
 
@@ -571,7 +594,7 @@ class Transpiler {
     
         // Los bindings de la nueva función se llevan los bindings de la función actual según la cantidad de args,
         // pero con los nombres de los args.
-        this.bindings.unshift({
+        this.bindings.push({
             fun: node.functionName,
             binding: this.bindings[0].binding.slice(0, node.args.length).map((binding, index) => {
                 // Asocia el nombre de los parámetros de la función con los valores de los argumentos
