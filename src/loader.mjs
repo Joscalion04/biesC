@@ -30,6 +30,7 @@ class Loader extends biesGrammarVisitor {
         this.functionAttributes[this.globalContext] = this.initializeAttributes();
         this.scopeStack = [{}];  // Se añade la pila de alcance
         this.attributeId = 0;
+        this.processingLambda = false;
     }
     /** 
      * Inicializa los atributos para una nueva función o contexto, asignando un ID único 
@@ -148,6 +149,7 @@ class Loader extends biesGrammarVisitor {
             value,
             id: this.attributeId++
         };
+        
         this.addAttribute(returnDetails);
         return returnDetails;
     }
@@ -165,7 +167,7 @@ class Loader extends biesGrammarVisitor {
     * @returns {Object} Un objeto que representa la declaración `let`, con el tipo, el identificador y el valor evaluado.
     */
     visitLetDeclaration(ctx) {
-        const id = ctx.ID().getText();
+        const name = ctx.ID().getText();
         
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
@@ -180,12 +182,12 @@ class Loader extends biesGrammarVisitor {
         // Si el valor es una LambdaExpression, manejamos la expresión de forma especial
         if (value && value.type === 'LambdaExpression') {
             // Inicializamos atributos de la función lambda
-            this.functionAttributes[id] = this.initializeAttributes();
+            this.functionAttributes[name] = this.initializeAttributes();
             
             // Detalles de la función
             const functionDetails = {
                 type: 'FunctionDeclaration',
-                name: id,
+                name: name,
                 params: value.params,
                 id: this.attributeId++
             };
@@ -197,10 +199,10 @@ class Loader extends biesGrammarVisitor {
             if (value.body) {
                 if (Array.isArray(value.body)) {
                     // Si el cuerpo es un bloque de sentencias
-                    this.functionAttributes[id].secuencia.push(...value.body);
+                    this.functionAttributes[name].secuencia.push(...value.body);
                 } else {
                     // Si el cuerpo es una única expresión
-                    this.functionAttributes[id].secuencia.push(value.body);
+                    this.functionAttributes[name].secuencia.push(value.body);
                 }
             }
         }
@@ -208,11 +210,11 @@ class Loader extends biesGrammarVisitor {
         // Detalles de la declaración let
         const letDetails = {
             type: 'LetDeclaration',
-            id,
+            name,
             value,
             id: this.attributeId++
         };
-        
+
         // Guardamos la declaración let en el contexto
         this.addAttribute(letDetails);
         
@@ -236,7 +238,7 @@ class Loader extends biesGrammarVisitor {
         const params = ctx.parameterList()
             ? ctx.parameterList().ID().map(param => param.getText())
             : [];
-
+            
         let body;
         if (ctx.block()) {
             body = ctx.block().statement().map(stmt => this.visit(stmt));
@@ -247,8 +249,10 @@ class Loader extends biesGrammarVisitor {
         return {
             type: 'LambdaExpression',
             params,
-            body
+            body,
+            id: this.attributeId++
         };
+
     }
 
 
@@ -330,6 +334,10 @@ class Loader extends biesGrammarVisitor {
     * @returns {Object} return.right El valor de la asignación siguiente en la expresión binaria.
     */
     visitExpression(ctx) {
+        if (ctx.functionCall()) {
+            return this.visit(ctx.functionCall());
+        }
+
         const assignments = ctx.assignment();
         if (assignments.length === 0) return null;
 
@@ -554,7 +562,6 @@ class Loader extends biesGrammarVisitor {
             args: args.flat(),
             id: this.attributeId++
         };
-
         // Solo añadimos el print al contexto actual si no estamos dentro de una lambda
         if (!this.processingLambda) {
             this.addAttribute(printDetails);
@@ -761,6 +768,7 @@ class Loader extends biesGrammarVisitor {
     * @returns {Object} Un objeto que contiene los atributos de las funciones, con sus respectivos detalles y secuencia.
     */
     getFunctionAttributes() {
+        this.transformLetDeclarationsWithLambdas();
         return this.functionAttributes;
     }
 
@@ -785,7 +793,7 @@ class Loader extends biesGrammarVisitor {
             // Recorremos la secuencia de la función principal
             for (let i = 0; i < secuencia.length; i++) {
                 const attr = secuencia[i];
-    
+
                 // Buscamos las LetDeclarations con LambdaExpressions
                 if (attr.type === 'LetDeclaration' && attr.value && Array.isArray(attr.value) && attr.value[0][0]?.type === 'LambdaExpression') {
                     const lambdaExpression = attr.value[0][0]; // La LambdaExpression

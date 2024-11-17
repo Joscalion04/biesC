@@ -47,6 +47,7 @@ class Transpiler {
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
 
             const attributes = this.functionAttributes[functionName].secuencia;
+            // console.log('Atributos: ', attributes);
 
             // Recorrer los atributos de la función
             attributes.forEach((attribute, index) => this.processAttribute(attribute, attributes, index, 'function'));
@@ -73,6 +74,7 @@ class Transpiler {
 
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type) {
+        console.log('Atributo: ', attribute);
         if (this.attributesSet.has(attribute.id)) {
             return;
         }
@@ -101,7 +103,7 @@ class Transpiler {
                      attributes[j].type === 'IfStatement' ||
                      attributes[j].type === 'ElseIfStatement' || 
                      attributes[j].type === 'ElseStatement'
-                 ) {
+                ) {
                         if (attributes[j].body.id === attribute.id) {
                             break;
                         }
@@ -129,7 +131,7 @@ class Transpiler {
                 }
             } break;
             case 'PrintStatement':{
-                // this.transpilePrintStatement(attribute); // Manejo de PrintStatement
+                this.transpilePrintStatement(attribute);
             } break;
             case 'ExpressionStatement': {
                 this.processAttribute(attribute.expression, attributes, index, 'expression');
@@ -187,7 +189,7 @@ class Transpiler {
 
     // Manejar declaraciones Let/Const
     handleDeclaration(attribute, attributes, index, type) {
-        if (this.attributesSet.has(attribute.id)) {
+        if (this.attributesSet.has(attribute.id) || attribute.value.type === 'LambdaExpression') {
             return; // Si el atributo ya fue procesado, salir
         }
 
@@ -319,6 +321,8 @@ class Transpiler {
         } else if (typeof value === 'object') {
             if (value.type === 'FunctionCall') {
                 this.transpileFunctionCall(value);
+            } else if (value.type === 'BinaryExpression') {
+                this.transpileExpression(value);
             } else {
                 this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
                 this.incrementActualIfIndex();
@@ -451,7 +455,12 @@ class Transpiler {
             this.transpileExpression(node.left);
     
             // Aplica el operador binario al resultado de los operandos
-            this.loadBinaryOperator(node.operator);
+            if ((typeof node.right === 'string' || typeof node.right === 'string') && node.operator === '+') {
+                this.instructions.push('CAT');
+                this.incrementActualIfIndex();
+            } else {
+                this.loadBinaryOperator(node.operator);
+            }
         } else if (node.type === 'Identifier') {
             // Si es una variable, carga su valor
             this.instructions.push(`LDV ${node.name}`);
@@ -479,7 +488,12 @@ class Transpiler {
             if (arg.type === 'BinaryExpression') {
                 this.loadValue(arg.right);
                 this.loadValue(arg.left);
-                this.loadBinaryOperator(arg.operator);
+                if ((typeof arg.right === 'string' || typeof arg.right === 'string') && arg.operator === '+') {
+                    this.instructions.push('CAT');
+                    this.incrementActualIfIndex();
+                } else {
+                    this.loadBinaryOperator(arg.operator);
+                }
             } else {
                 this.loadValue(arg);
             }

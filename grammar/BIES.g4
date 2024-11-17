@@ -47,7 +47,8 @@ printStatement: PRINT '(' argumentList? ')' ';'? ;
 
 parameterList: ID (',' ID)*;
 
-expression: assignment (( '+' | '-' | '*' | '/' | '**' ) assignment)*;
+expression: functionCall                         // Prioriza functionCall
+          | assignment (( '+' | '-' | '*' | '/' | '**' ) assignment)*;
 
 assignment: comparison ('=' comparison)?;  // Ajustada para permitir asignaciones
 
