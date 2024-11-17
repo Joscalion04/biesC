@@ -23,6 +23,7 @@ class Transpiler {
         this.instructionIndexes = [];
         this.attributesSet = new Set();
         this.bindings = [];
+        this.functionDeclarations = [];
     }
 
     /** 
@@ -45,7 +46,9 @@ class Transpiler {
             console.log('Nombre de la función: ', functionName);
             console.log('='.repeat(100));
 
-            this.bindings.unshift({fun: functionName, binding: []});
+            if (functionName === 'main') {
+                this.bindings.unshift({fun: functionName, binding: []});
+            }
             
             this.instructions.push('=================================');
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
@@ -142,9 +145,15 @@ class Transpiler {
             case 'ExpressionStatement': {
                 this.processAttribute(attribute.expression, attributes, index, 'expression');
             } break;
+            case 'FunctionDeclaration': {
+                if (this.attributesSet.has(attribute.id)) {
+                    return;
+                }
+                this.attributesSet.add(attribute.id);
+                this.functionDeclarations.push(attribute);
+            } break;
             case 'ElseIfStatement':
             case 'ElseStatement':
-            case 'FunctionDeclaration':
                 break;
             default:
                 console.warn('Tipo de atributo desconocido:', attribute.type);
@@ -162,18 +171,22 @@ class Transpiler {
     }
 
     // Busca el índice de un binding dentro de los bindings de una función
-    getBindingIndex(id) {
-        // Recorre todas las listas de bindings en el contexto actual
-        for (const bindings of this.bindings) {
-            // Busca el índice del binding con el ID proporcionado
-            const index = bindings.binding.findIndex(binding => binding.id === id);
-            if (index !== -1) {
-                return index; // Devuelve el índice si se encuentra
+    getBindingIndex(name) {
+        // Recorre todas las colecciones de bindings en el contexto actual
+        for (let collectionIndex = 0; collectionIndex < this.bindings.length; collectionIndex++) {
+            // Obtiene la lista de bindings de la colección actual
+            const bindingsList = this.bindings[collectionIndex].binding;
+            
+            // Busca el índice del binding con el nombre proporcionado
+            const bindingIndex = bindingsList.findIndex(binding => binding.name === name);
+            
+            if (bindingIndex !== -1) {
+                return [collectionIndex, bindingIndex]; // Devuelve el índice de la colección y el índice del binding
             }
         }
-        return -1; // Devuelve -1 si no se encuentra el ID
+        return [-1, -1]; // Devuelve [-1, -1] si no se encuentra el binding
     }
-    
+
 
     // Busca el índice de un binding por nombre de función
     getBindingIndexByName(fun) {
@@ -192,7 +205,7 @@ class Transpiler {
         // Transpilar solo si no fue encontrado
         if (!found) {
             this.attributesSet.add(attribute.id);
-            this.transpileExpression(attribute, attribute.id);
+            this.transpileExpression(attribute, attribute.name ? attribute.name : '');
         }
     }
 
@@ -236,6 +249,11 @@ class Transpiler {
                     if (arg.id === attribute.id) {
                         return true; // Atributo encontrado
                     }
+                }
+            } else if (currentAttribute.type === 'BinaryExpression') {
+                // Verificar si el atributo está dentro de la expresión binaria
+                if (currentAttribute.left.id === attribute.id || currentAttribute.right.id === attribute.id) {
+                    return true; // Atributo encontrado
                 }
             }
         }
@@ -318,37 +336,54 @@ class Transpiler {
     * @param {(number|string|object)} value El valor que se va a cargar. Puede ser un número, una cadena de texto,
     *                                      o un objeto con una propiedad `functionName`.
     */
-    loadValue(value, id, type) {
-        // console.log('Valor: ', value);
-        if (typeof value === 'number') {
+    loadValue(value, name, type) {
+        
+        let bindingIndex = this.getBindingIndex(name ? name : value);
+        
+        if (bindingIndex[0] === -1) {
 
-            this.instructions.push(`LDV ${value}`);
-            this.incrementActualIfIndex();
+            if (typeof value === 'number') {
 
-            if (type === 'declaration') {
-                this.bindings[0].binding.push({id: id, value: value});
-                this.instructions.push(`BST 0 ${this.getBindingIndex(id)}`); // Asociar al binding index
-            }
-
-        } else if (typeof value === 'string') {
-
-            this.instructions.push(`LDV "${value}"`);
-            this.incrementActualIfIndex();
-
-            if (type === 'declaration') {
-                this.bindings[0].binding.push({id: id, value: value});
-                this.instructions.push(`BST 0 ${this.getBindingIndex(id)}`); // Asociar al binding index
-            }
-
-        } else if (typeof value === 'object') {
-            if (value.type === 'FunctionCall') {
-                this.transpileFunctionCall(value);
-            } else if (value.type === 'BinaryExpression') {
-                this.transpileExpression(value, id);
-            } else {
-                this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
+                this.instructions.push(`LDV ${value}`);
                 this.incrementActualIfIndex();
+
+                if (type === 'declaration') {
+                    this.bindings[0].binding.push({name: name, value: value});
+                    bindingIndex = this.getBindingIndex(name)
+                    this.instructions.push(`BST ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name ? name : value}`); // Asociar al binding index
+                }
+
+            } else if (typeof value === 'string') {
+
+                this.instructions.push(`LDV "${value}"`);
+                this.incrementActualIfIndex();
+
+                if (type === 'declaration') {
+                    this.bindings[0].binding.push({name: name, value: value});
+                    bindingIndex = this.getBindingIndex(name)
+                    this.instructions.push(`BST ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name ? name : value}`); // Asociar al binding index
+                }
+
+            } else if (typeof value === 'object') {
+
+                if (value.type === 'FunctionCall') {
+
+                    this.transpileFunctionCall(value);
+
+                } else if (value.type === 'BinaryExpression') {
+
+                    this.transpileExpression(value, name);
+
+                } else {
+
+                    this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
+                    this.incrementActualIfIndex();
+
+                }
             }
+        } else {
+            this.instructions.push(`BLD ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name ? name : value}`); // Asociar al binding index
+            this.incrementActualIfIndex();
         }
     }
 
@@ -421,7 +456,7 @@ class Transpiler {
     transpilePrintStatement(node) {
         // Iterar sobre los argumentos del PrintStatement
         node.args.forEach(arg => {
-            this.loadValue(arg, node.id); // Cargar el valor del argumento en la pila
+            this.loadValue(arg, node.name ? node.name : ''); // Cargar el valor del argumento en la pila
         });
     
         // Emitir la instrucción de impresión
@@ -430,8 +465,8 @@ class Transpiler {
     }
     
     transpileComparisionExpression(node) {
-        this.loadValue(node.right, node.id);
-        this.loadValue(node.left, node.id);
+        this.loadValue(node.right, node.name ? node.name : '');
+        this.loadValue(node.left, node.name ? node.name : '');
         this.loadComparisionOperator(node.operator);
     }
 
@@ -450,7 +485,7 @@ class Transpiler {
             //this.instructions.push(`LDF $${node.id}`); // Cargar la función lambda
            // this.instructions.push(`BLD 0 ${bindingIndex}`); // Asociar al binding index
         } else {
-            this.loadValue(node.value, node.id, 'declaration'); // Manejar el valor normalmente
+            this.loadValue(node.value, node.name ? node.name : '', 'declaration'); // Manejar el valor normalmente
             this.incrementActualIfIndex();
         }
         
@@ -466,15 +501,15 @@ class Transpiler {
     * @method transpileExpression
     * @param {Object} node El nodo que representa la expresión.
     */
-    transpileExpression(node, id) {
+    transpileExpression(node, name) {
         if (node.type === 'BinaryExpression') {
-            const processOperand = (operand, nodeId) => {
-                this.transpileExpression(operand, nodeId);  // No hace falta convertir a cadena
+            const processOperand = (operand, nodeName) => {
+                this.transpileExpression(operand, nodeName);  // No hace falta convertir a cadena
             };
             
             // Procesa ambos operandos
-            processOperand(node.left, node.id);
-            processOperand(node.right, node.id);
+            processOperand(node.left, node.name ? node.name : '');
+            processOperand(node.right, node.name ? node.name : '');
             
             // Aplica el operador binario al resultado de los operandos
             const isStringOperand = typeof node.left === 'string' || typeof node.right === 'string';
@@ -490,7 +525,7 @@ class Transpiler {
             this.incrementActualIfIndex();
         } else if (typeof node === 'number' || typeof node === 'string') {
             // Si es un valor literal, simplemente carga el valor
-            this.loadValue(node, id);
+            this.loadValue(node, name);
         } else {
             throw new Error(`Tipo de nodo desconocido o no soportado: ${JSON.stringify(node)}`);
         }
@@ -509,24 +544,45 @@ class Transpiler {
     transpileFunctionCall(node) {
         node.args.forEach(arg => {
             if (arg.type === 'BinaryExpression') {
-                this.loadValue(arg.right, arg.id);
-                this.loadValue(arg.left, arg.id);
-                if ((typeof arg.right === 'string' || typeof arg.right === 'string') && arg.operator === '+') {
+                // Procesa los operandos de la expresión binaria
+                this.loadValue(arg.right, arg.name ? arg.name : '');
+                this.loadValue(arg.left, arg.name ? arg.name : '');
+    
+                if ((typeof arg.right === 'string' || typeof arg.left === 'string') && arg.operator === '+') {
                     this.instructions.push('CAT');
                     this.incrementActualIfIndex();
                 } else {
                     this.loadBinaryOperator(arg.operator);
                 }
             } else {
-                this.loadValue(arg, arg.id);
+                // Carga el valor directamente si no es una expresión binaria
+                this.loadValue(arg, arg.name ? arg.name : '');
             }
         });
-        
+    
         this.instructions.push(`LDF $${this.getFunctionClosure(node.functionName)}`);
         this.incrementActualIfIndex();
         this.instructions.push(`APP  ${node.args.length}                ; ${node.functionName}(${node.args.join(', ')})`);
         this.incrementActualIfIndex();
+    
+        // Obtiene la declaración de la función y sus parámetros
+        const functionDeclaration = this.functionDeclarations.find(declaration => declaration.name === node.functionName);
+        const functionDeclarationArgs = functionDeclaration.params;
+    
+        // Los bindings de la nueva función se llevan los bindings de la función actual según la cantidad de args,
+        // pero con los nombres de los args.
+        this.bindings.unshift({
+            fun: node.functionName,
+            binding: this.bindings[0].binding.slice(0, node.args.length).map((binding, index) => {
+                // Asocia el nombre de los parámetros de la función con los valores de los argumentos
+                return {
+                    name: functionDeclarationArgs[index],  // Nombre del argumento de la función
+                    value: binding.value   // Conserva el valor del binding actual
+                };
+            })
+        });
     }
+    
 
     /** 
     * Obtiene el código transpilado en formato de texto.
