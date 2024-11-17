@@ -171,7 +171,7 @@ class Loader extends biesGrammarVisitor {
      */
     processDeclaration(ctx, declarationType) {
         const name = ctx.ID().getText();
-    
+
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
@@ -182,9 +182,11 @@ class Loader extends biesGrammarVisitor {
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
 
-        // Si es una lambda o una lambda anidada
+        // Verificación mejorada para lambdas
         if (value && (value.type === 'LambdaExpression' || 
             (value.type === 'BinaryExpression' && value.left?.type === 'LambdaExpression'))) {
+            
+            // Creamos un nuevo contexto para la función lambda
             return this.processLambda(name, value, value);
         } else {
             const details = {
@@ -211,46 +213,77 @@ class Loader extends biesGrammarVisitor {
      * @param {Object} value El valor completo de la lambda, incluyendo sus detalles.
      */
     processLambda(name, lambda, value) {
-        // Inicializamos atributos de la función lambda
+        // Inicializamos atributos de la función lambda principal
         this.functionAttributes[name] = this.initializeAttributes();
         
-        // Extraemos los parámetros y el cuerpo
-        let params = [];
-        let body;
+        // Función recursiva mejorada para procesar lambdas anidadas
+        const processNestedLambda = (lambda, parentName, depth = 0) => {
+            if (lambda.type === 'LambdaExpression') {
+                // Crear un nombre único para esta lambda usando el nombre del padre
+                const lambdaName = `${parentName}_lambda_${depth}`;
+                
+                // Inicializar atributos para esta lambda específica
+                this.functionAttributes[lambdaName] = this.initializeAttributes();
+                
+                const functionDetails = {
+                    type: 'FunctionDeclaration',
+                    name: lambdaName,
+                    params: lambda.params,
+                    body: lambda.body,
+                    id: this.attributeId++,
+                    parentFunction: parentName // Agregamos referencia al padre
+                };
 
-        if (lambda.type === 'LambdaExpression') {
-            params = lambda.params;
-            body = lambda.body;
-        } else if (lambda.type === 'BinaryExpression') {
-            // Para casos de lambdas anidadas, construimos la cadena de parámetros
-            let currentLambda = lambda;
-            while (currentLambda && currentLambda.type === 'BinaryExpression') {
-                if (currentLambda.left?.type === 'LambdaExpression') {
-                    params = params.concat(currentLambda.left.params);
-                    currentLambda = currentLambda.right;
+                // Si el cuerpo es otra lambda, procesarla recursivamente
+                if (lambda.body.type === 'LambdaExpression') {
+                    const nestedLambda = processNestedLambda(lambda.body, lambdaName, depth + 1);
+                    
+                    // Agregamos la lambda anidada a la secuencia de su padre
+                    this.functionAttributes[lambdaName].secuencia.push({
+                        type: 'NestedLambda',
+                        lambda: nestedLambda,
+                        id: this.attributeId++
+                    });
+                    
+                    functionDetails.body = nestedLambda;
                 } else {
-                    break;
+                    // Si no es una lambda anidada, agregamos el cuerpo a la secuencia
+                    this.functionAttributes[lambdaName].secuencia.push({
+                        type: 'LambdaBody',
+                        body: lambda.body,
+                        id: this.attributeId++
+                    });
                 }
-            }
-            body = currentLambda;
-        }
 
-        const functionDetails = {
+                return functionDetails;
+            }
+            return lambda;
+        };
+
+        // Procesamos la lambda inicial y sus anidaciones
+        const functionDetails = processNestedLambda(lambda, name);
+
+        // Agregamos la lambda principal al contexto global
+        const mainFunctionDetails = {
             type: 'FunctionDeclaration',
             name,
-            params,
-            body,
+            params: lambda.type === 'LambdaExpression' ? lambda.params : [],
+            body: functionDetails,
             id: this.attributeId++
         };
 
         if (this.scopeStack.length === 0) {
-            this.addAttribute(functionDetails);
+            this.addAttribute(mainFunctionDetails);
         }
 
-        // Agregamos el cuerpo de la lambda a la secuencia de la función
-        this.functionAttributes[name].secuencia.push(value);
+        // Agregamos el valor completo a la secuencia de la función principal
+        this.functionAttributes[name].secuencia.push({
+            type: 'MainLambda',
+            value,
+            id: this.attributeId++
+        });
 
-        return functionDetails;
+        return mainFunctionDetails;
     }
 
     /**
@@ -299,8 +332,9 @@ class Loader extends biesGrammarVisitor {
         if (ctx.block()) {
             body = this.visit(ctx.block());
         } else if (ctx.lambdaExpression()) {
-            // Para lambdas anidadas como 'x => y => x + y'
-            body = this.visit(ctx.lambdaExpression());
+            // Para lambdas anidadas
+            const nestedLambda = this.visit(ctx.lambdaExpression());
+            body = nestedLambda;
         } else if (ctx.expression()) {
             body = this.visit(ctx.expression());
         } else if (ctx.ifThenStatement()) {
@@ -313,11 +347,6 @@ class Loader extends biesGrammarVisitor {
             body,
             id: this.attributeId++
         };
-
-        // Solo agregamos al contexto si no estamos procesando una lambda anidada
-        if (!this.processingLambda && this.scopeStack.length === 0) {
-            this.addAttribute(lambdaDetails);
-        }
 
         return lambdaDetails;
     }
