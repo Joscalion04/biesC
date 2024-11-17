@@ -184,7 +184,7 @@ class Loader extends biesGrammarVisitor {
 
         // Si el valor es una LambdaExpression, la procesamos
         if (lambda && lambda.type === 'LambdaExpression') {
-            return this.processLambda(name, lambda, value);
+             return this.processLambda(name, lambda, value);
         } else {
             // Guardamos los detalles de la declaración en el contexto
             const details = {
@@ -315,16 +315,6 @@ class Loader extends biesGrammarVisitor {
             const operator = ctx.getChild(2 * i - 1).getText();
             const assignmentValue = this.visit(assignments[i]);
             
-            // Handle numeric operations if both operands are numbers
-            if (typeof result === 'number' && typeof assignmentValue === 'number') {
-                switch (operator) {
-                    case '+': result += assignmentValue; break;
-                    case '-': result -= assignmentValue; break;
-                    case '*': result *= assignmentValue; break;
-                    case '/': result /= assignmentValue; break;
-                    case '**': result = Math.pow(result, assignmentValue); break;
-                }
-            } else {
                 const expressionDetails = {
                     type: 'BinaryExpression',
                     left: result,
@@ -338,7 +328,6 @@ class Loader extends biesGrammarVisitor {
                 }
                 
                 result = expressionDetails;
-            }
         }
         return result;
     }

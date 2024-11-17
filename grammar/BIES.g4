@@ -78,7 +78,11 @@ elseIfStatement: 'else' 'if' '(' expression ')' block (elseIfStatement | elseSta
 
 elseStatement: ELSE block;
 
-lambdaExpression: '(' parameterList? ')' '=>' (block | expression | lambdaExpression); 
+// Modificación en `lambdaExpression` para soportar lambdas con y sin paréntesis en los parámetros
+lambdaExpression
+    : '(' parameterList? ')' '=>' (block | expression | lambdaExpression) // Lambdas con paréntesis
+    | parameterList '=>' (block | expression | lambdaExpression)                     // Lambdas sin paréntesis
+    ;
 
 listAccess: ID '[' expression ']';
 
