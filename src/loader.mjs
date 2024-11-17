@@ -31,6 +31,7 @@ class Loader extends biesGrammarVisitor {
         this.scopeStack = [];  // Se añade la pila de alcance
         this.attributeId = 0;
         this.processingLambda = false;
+        this.processingIfThen = false;
     }
     /** 
      * Inicializa los atributos para una nueva función o contexto, asignando un ID único 
@@ -182,12 +183,11 @@ class Loader extends biesGrammarVisitor {
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
 
-        // Verificación mejorada para lambdas
-        if (value && (value.type === 'LambdaExpression' || 
-            (value.type === 'BinaryExpression' && value.left?.type === 'LambdaExpression'))) {
-            
-            // Creamos un nuevo contexto para la función lambda
-            return this.processLambda(name, value, value);
+        const lambda = value.statements?.value;
+
+        // Si el valor es una LambdaExpression, la procesamos
+        if (lambda && lambda.type === 'LambdaExpression') {
+             return this.processLambda(name, lambda, value);
         } else {
             const details = {
                 type: declarationType,
@@ -261,9 +261,8 @@ class Loader extends biesGrammarVisitor {
             }
             return lambda;
         };
-
         // Procesamos la lambda inicial y sus anidaciones
-        const functionDetails = processNestedLambda(lambda, name);
+        const functionDetails = processNestedLambda(lambda.body, name);
 
         // Agregamos la lambda principal al contexto global
         const mainFunctionDetails = {
@@ -278,15 +277,10 @@ class Loader extends biesGrammarVisitor {
             this.addAttribute(mainFunctionDetails);
         }
 
-        // Agregamos el valor completo a la secuencia de la función principal
-        this.functionAttributes[name].secuencia.push({
-            type: 'LambdaExpression',
-            params: lambda.params,
-            body: functionDetails.body,
-            id: this.attributeId++
-        });
-
-        return mainFunctionDetails;
+        // Procesamos el cuerpo de la lambda
+        const body = Array.isArray(lambda.body) ? lambda.body : [value];
+        this.functionAttributes[name].secuencia.push(...body);
+        return functionDetails;
     }
 
     /**
@@ -344,14 +338,20 @@ class Loader extends biesGrammarVisitor {
             body = this.visit(ctx.ifThenStatement());
         }
 
-        const lambdaDetails = {
-            type: 'LambdaExpression',
-            params,
-            body,
+        return {
+            type: 'Block',
+            statements: {
+                type: 'ReturnStatement',
+                value: {
+                    type: 'LambdaExpression',
+                    params,
+                    body,
+                    id: this.attributeId++
+                },
+                id: this.attributeId++
+            },
             id: this.attributeId++
         };
-
-        return lambdaDetails;
     }
 
 
@@ -460,7 +460,7 @@ class Loader extends biesGrammarVisitor {
                 right: factorValue,
                 id: this.attributeId++
             };
-            if (this.scopeStack.length === 0) {
+            if (this.scopeStack.length === 0 && !this.processingIfThen) {
                 this.addAttribute(comparisonDetails);
             }
             result = comparisonDetails;
@@ -680,7 +680,7 @@ class Loader extends biesGrammarVisitor {
             id: this.attributeId++
         };
 
-        if (this.scopeStack.length === 0) {
+        if (this.scopeStack.length === 0 && !this.processingIfThen) {
             this.addAttribute(expressionDetails);
         }
         return expressionDetails;
@@ -694,6 +694,7 @@ class Loader extends biesGrammarVisitor {
  * @returns {Object} An object representing the `ifThenStatement`, with its type, condition, and evaluated blocks.
  */
 visitIfThenStatement(ctx) {
+    this.processingIfThen = true;
     // Evaluate the condition
     const condition = this.visit(ctx.expression());
   
@@ -704,20 +705,20 @@ visitIfThenStatement(ctx) {
         ? ctx.statement().map(stmt => this.visit(stmt))
         : [];
 
-      
-
     // Create details for the `if-then` statement
     const ifThenStatementDetails = {
         type: 'IfThenStatement',
         condition,
         thenStatement,
         subsequentStatements,
-         id: this.attributeId++
+        id: this.attributeId++
     };
 
     // Register the details in the results
-    this.addAttribute(ifThenStatementDetails);
-
+    // if (this.scopeStack.length === 0) {
+    //     this.addAttribute(ifThenStatementDetails);
+    // }
+    this.processingIfThen = false;
     return ifThenStatementDetails;
 }
 
@@ -731,8 +732,9 @@ visitBlockThen(ctx) {
         statements,
         id: this.attributeId++
     };
-
-    this.addAttribute(blockDetails);
+    if (this.scopeStack.length === 0 && !this.processingIfThen) {
+        this.addAttribute(blockDetails);
+    }
 
     return blockDetails;
 }   

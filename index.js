@@ -13,7 +13,7 @@ import fs from 'fs'; // Importar el módulo fs para trabajar con archivos
 // 1 , 2 , 3 , 4, 5, 6, 7, 8, 9 no traspilan
 
 // Ejecutar el parser con el archivo de prueba test1.bies
-parseBIESCode("./test/test_funcionales/versionCompleja0.bies");
+parseBIESCode("./test/test_funcionales/versionCompleja2.bies");
 //parseBIESCode("./test/test_unitarios/testFunciones.bies");
 
 

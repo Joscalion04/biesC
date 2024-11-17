@@ -24,6 +24,8 @@ class Transpiler {
         this.attributesSet = new Set();
         this.bindings = [];
         this.functionDeclarations = [];
+        this.exitCounter = [];
+        this.exitIndexes = [];
     }
 
     /** 
@@ -42,9 +44,9 @@ class Transpiler {
         // Recorrer cada función y procesar sus atributos
         for (const functionName in this.functionAttributes) {
 
-            // console.log('='.repeat(100));
-            // console.log('Nombre de la función: ', functionName);
-            // console.log('='.repeat(100));
+            console.log('='.repeat(100));
+            console.log('Nombre de la función: ', functionName);
+            console.log('='.repeat(100));
 
             if (functionName === 'main') {
                 this.bindings.unshift({fun: functionName, binding: []});
@@ -58,6 +60,7 @@ class Transpiler {
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
 
             const attributes = this.functionAttributes[functionName].secuencia;
+            // console.log('Atributos: ', attributes);
 
             // Recorrer los atributos de la función
             attributes.forEach((attribute, index) => this.processAttribute(attribute, attributes, index, 'function'));
@@ -75,12 +78,9 @@ class Transpiler {
     // Transpilación de bloques
     transpileBlock(block) {
         const statements = Array.isArray(block.statements) ? block.statements : [block.statements];
-        statements.forEach(statement => this.processAttribute(statement, statements, null, 'block'));
+        statements.forEach(statement => this.processAttribute(statement, statements, null, block.type));
     }    
-    transpileBlockThen(blockThen) {
-        const statements = Array.isArray(blockThen.statements) ? blockThen.statements : [blockThen.statements];
-        statements.forEach(statement => this.processAttribute(statement, statements, null, 'blockThen'));
-    }   
+
     // Transpilado de valores (declaraciones, expresiones, etc.)
     transpileValue(value) {
         this.processAttribute(value, [], null, 'value');
@@ -88,7 +88,7 @@ class Transpiler {
 
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type) {
-        // console.log('Atributo: ', attribute);
+        console.log('Atributo: ', attribute);
         if (this.attributesSet.has(attribute.id)) {
             return;
         }
@@ -102,8 +102,11 @@ class Transpiler {
                 if (this.attributesSet.has(attribute.id)) {
                     return;
                 }
-                this.attributesSet.add(attribute.id);
-                this.transpileComparisionExpression(attribute);
+                const found = this.isAttributeInFutureBlocks(attribute, attributes, index);
+                if (!found) {
+                    this.attributesSet.add(attribute.id);
+                    this.transpileComparisionExpression(attribute);
+                }
             } break;
             case 'IfStatement': {
                 if (this.attributesSet.has(attribute.id)) {
@@ -111,6 +114,11 @@ class Transpiler {
                 }
                 this.attributesSet.add(attribute.condition.id);
                 this.transpileIfStatement(attribute);
+                let i = 2;
+                this.exitCounter.forEach((exit) => {
+                    this.instructions.splice(this.instructions.length - (exit - 1), 0, `BR ${exit + (this.exitCounter.length - i++)}`);
+                });
+                this.exitCounter = [];
             } break;
             case 'IfThenStatement': {
                 if (this.attributesSet.has(attribute.id)) {
@@ -119,7 +127,6 @@ class Transpiler {
                 this.attributesSet.add(attribute.condition.id);
                 this.transpileIfThenStatement(attribute);
             } break;
-            
             case 'Block': {
                 for (let j = index; j < attributes.length; j++) {
                     if (
@@ -146,7 +153,7 @@ class Transpiler {
                 this.handleBinaryExpression(attribute, attributes, index, type);
             } break;
             case 'ReturnStatement': {
-                if (type === 'block') {
+                if (type === 'Block') {
                     this.transpileReturnStatement(attribute);
                 }
             } break;
@@ -159,7 +166,7 @@ class Transpiler {
                 this.transpilePrintStatement(attribute);
             } break;
             case 'ExpressionStatement': {
-                this.processAttribute(attribute.expression, attributes, index, 'expression');
+                this.handleExpressionStatement(attribute, attributes, index, type);
             } break;
             case 'FunctionDeclaration': {
                 if (this.attributesSet.has(attribute.id)) {
@@ -176,11 +183,28 @@ class Transpiler {
             case 'LetInDeclaration': {
                 this.handleDeclaration(attribute, attributes, index, type);
             } break;
+            case 'BlockThen': {
+                this.transpileBlock(attribute);
+            } break;
             case 'ElseIfStatement':
             case 'ElseStatement':
                 break;
             default:
                 console.warn('Tipo de atributo desconocido:', attribute.type);
+        }
+    }
+
+    handleExpressionStatement(node, attributes, index, type) {  
+        if (this.attributesSet.has(node.id)) {
+            return;
+        }
+
+        if (typeof node.expression === 'object') {
+            this.attributesSet.add(node.id);
+            this.processAttribute(node.expression, attributes, index, 'expression');
+        } else if (type === 'BlockThen') {
+            this.attributesSet.add(node.id);
+            this.loadValue(node.expression, node.expression);
         }
     }
 
@@ -271,7 +295,6 @@ class Transpiler {
     isAttributeInFutureBlocks(currentAttribute, allAttributes, startIndex) {
         for (let j = startIndex + 1; j < allAttributes.length; j++) {
             const futureAttribute = allAttributes[j];
-
             // Validar si es un bloque
             if (futureAttribute.type === 'Block') {
                 // Verificar si el atributo está dentro de las declaraciones del bloque
@@ -305,41 +328,69 @@ class Transpiler {
                         return true; // Atributo encontrado
                     }
                 }
+            } else if (futureAttribute.type === 'IfThenStatement') {
+                // Verificar si el atributo está dentro de la condición del `if`
+                if (futureAttribute.condition.id === currentAttribute.id) {
+                    return true; // Atributo encontrado
+                }
+                // Verificar si el atributo está dentro del cuerpo del `if`
+                if (futureAttribute.thenStatement.id === currentAttribute.id) {
+                    return true; // Atributo encontrado
+                }
+                // verificar si esta dentro de los statements del thenStatement
+                for (const statement of futureAttribute.thenStatement.statements) {
+                    if (statement.id === currentAttribute.id) {
+                        return true; // Atributo encontrado
+                    }
+                }
+                // Verificar si el atributo está dentro de los `subsequentStatements`
+                if (futureAttribute.subsequentStatements) {
+                    for (const statement of futureAttribute.subsequentStatements) {
+                        if (statement.id === currentAttribute.id) {
+                            return true; // Atributo encontrado
+                        }
+                    }
+                }
             }
         }
         return false; // Atributo no encontrado
     }
-
 
     transpileReturnStatement(node) {
         this.transpileValue(node.value);
         this.instructions.push('RET');
         this.incrementActualIfIndex();
     }
-    transpileIfThenStatement(node) {
-        
-        // Cargar y procesar la condición del `if-then`
-        this.processIfBranchThen(node.condition, node.thenStatement, "if");
 
-          // Procesar los `subsequentStatements`
-          if (node.subsequentStatements) {
-            console.log('SubsequentStatements: ', node.subsequentStatements);
+    transpileIfThenStatement(node) {
+        // Procesar la condición del `if` y el bloque del `then`
+        this.processIfBranch(node.condition, node.thenStatement, "if");
+
+        // Procesar el bloque del `else`
+        if (node.subsequentStatements.length > 0) {
             node.subsequentStatements.forEach(statement => {
-                this.processAttribute(statement, node.subsequentStatements, null, 'statement');
+                this.handleExpressionStatement(statement, node.subsequentStatements, null, 'BlockThen');
             });
         }
+
+        this.instructions.push('RET');
+        this.incrementActualIfIndex();
+    }
+
     
-    }
-    processIfBranchThen(condition, body, label) {
-        this.addBranchThen(condition, body, label);
-    }
     transpileIfStatement(node) {
         // Procesar el bloque del `if`
         this.processIfBranch(node.condition, node.body, "if");
+        
+        if (isNaN(this.exitCounter[0])) {
+            this.exitCounter = [1];
+        } else {
+            this.exitCounter.push(1);
+        }
     
-        // Procesar el bloque del `else if`
+        // Procesar el bloque del `else if`, con manejo de anidamiento
         if (node.elseIfStatement) {
-            this.processElseIfBranch(node.elseIfStatement);
+            this.processElseIfBranches(node.elseIfStatement);
         }
     
         // Procesar el bloque del `else`
@@ -352,6 +403,15 @@ class Transpiler {
         this.addBranch(condition, body, label);
     }
     
+    // Maneja el procesamiento de múltiples `else if` anidados
+    processElseIfBranches(elseIfNode) {
+        while (elseIfNode) {
+            this.processElseIfBranch(elseIfNode);
+            this.exitCounter.push(1);
+            elseIfNode = elseIfNode.elseIfStatement; // Continuar con el siguiente nodo anidado
+        }
+    }
+    
     processElseIfBranch(elseIfNode) {
         if (!this.attributesSet.has(elseIfNode.condition.id)) {
             this.attributesSet.add(elseIfNode.condition.id);
@@ -359,7 +419,7 @@ class Transpiler {
         }
         this.addBranch(elseIfNode.condition, elseIfNode.body, "else if");
     
-        // Procesar el bloque del `else` dentro del `else if`
+        // Procesar el bloque del `else` dentro del `else if`, si existe
         if (elseIfNode.elseStatement) {
             this.transpileBlock(elseIfNode.elseStatement.body);
         }
@@ -374,19 +434,29 @@ class Transpiler {
         }
     
         const indexToInsert = this.instructionIndexes.pop() - 1;
+    
         const conditionText = condition ? `${condition.left} ${condition.operator} ${condition.right}` : "";
         this.instructions.splice(
             indexToInsert + 1,
             0,
             `BF ${this.ifIndexes.pop()}              ; ${label}(${conditionText})`
         );
+        this.incrementActualIfIndex();
+    }    
+
+    incrementActualIfIndex() {
+        this.exitCounter.forEach((value, index) => {
+            this.exitCounter[index] = value + 1;
+        });        
+        this.ifIndexes.push(this.ifIndexes.pop() + 1);
     }
+    
     addBranchThen(condition, body, label) {
         this.ifIndexes.push(1);
         this.instructionIndexes.push(this.instructions.length);
     
         if (body) {
-            this.transpileBlockThen(body);
+            this.transpileBlock(body);
         }
     
         const indexToInsert = this.instructionIndexes.pop() - 1;
@@ -396,14 +466,11 @@ class Transpiler {
             0,
             `BF ${this.ifIndexes.pop()}              ; ${label}(${conditionText})`
         );
+        this.incrementActualIfIndex();
     }
     
     getFunctionClosure(functionName) {
         return this.functionAttributes[functionName].id;
-    }
-
-    incrementActualIfIndex() {
-        this.ifIndexes.push(this.ifIndexes.pop() + 1);
     }
 
     /** 
@@ -581,7 +648,6 @@ class Transpiler {
             this.transpileBlock(node.body);
         } else {
             this.loadValue(node.value, node.name ? node.name : '', 'declaration'); // Manejar el valor normalmente
-            this.incrementActualIfIndex();
         }
     }
 
@@ -607,10 +673,10 @@ class Transpiler {
             const isStringOperand = typeof node.left === 'string' || typeof node.right === 'string';
             if (isStringOperand && node.operator === '+') {
                 this.instructions.push('CAT'); // Concatenación para cadenas
+                this.incrementActualIfIndex();
             } else {
                 this.loadBinaryOperator(node.operator); // Carga el operador binario correspondiente
             }
-            this.incrementActualIfIndex();
 
             if (type === 'declaration') {
                 const evaluateBinaryOperation = (op, leftVal, rightVal) => {

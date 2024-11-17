@@ -1,0 +1,23 @@
+fun isPalindromeRecursive(lista) {
+    // Función auxiliar para verificar sublistas
+    fun check(i, j) {
+        if (i >= j) {
+            return true;  // Caso base: ya verificamos todo
+        }
+        if (lista[i] != lista[j]) {
+            return false;  // No es un palíndromo
+        }
+        return check(i + 1, j - 1);  // Verifica los extremos internos
+    }
+
+    return check(0, len(lista) - 1);  // Llamada inicial
+}
+
+let lista = [1, 2, 3, 2, 1];
+print("Verificando si la lista es un palíndromo de manera recursiva:");
+let resultado = isPalindromeRecursive(lista);
+if (resultado) {
+    print("La lista es un palíndromo.");
+} else {
+    print("La lista no es un palíndromo.");
+}
