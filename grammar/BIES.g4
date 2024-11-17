@@ -3,15 +3,15 @@ grammar bies;
 // Tokens
 LET: 'let';
 CONST: 'const';
-VAR: 'var';
+VAR: 'var';  
 FUN: 'fun';
 TRUE: 'true';
 FALSE: 'false';
 IF: 'if';
+THEN: 'then';
 ELSE: 'else';
 RETURN: 'return';
 IN: 'in';
-THEN: 'then';
 PRINT: 'print'; // Token para la función print
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 INT: [0-9]+;
@@ -31,6 +31,7 @@ statement: functionDeclaration
          | expressionStatement 
          | returnStatement
          | ifStatement
+         | inlineIfStatement    // Agregamos la nueva regla aquí
          | block
          ;
 
@@ -79,3 +80,6 @@ elseStatement: ELSE block;
 lambdaExpression: '(' parameterList? ')' '=>' (block | expression | lambdaExpression); 
 
 listAccess: ID '[' expression ']';
+
+// Nueva regla inline para if-then-else
+inlineIfStatement: 'if' '(' expression ')' 'then' statement 'else' statement;

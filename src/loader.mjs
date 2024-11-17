@@ -456,6 +456,10 @@ class Loader extends biesGrammarVisitor {
         if (ctx.functionDeclaration()) {
             return this.visit(ctx.functionDeclaration());
         }
+        if (ctx.inlineIfStatement()) { 
+            return this.visit(ctx.inlineIfStatement());
+        }
+
         if (ctx.ifStatement()) {
             return this.visit(ctx.ifStatement());
         }
@@ -604,6 +608,38 @@ class Loader extends biesGrammarVisitor {
         this.addAttribute(expressionDetails);
         return expressionDetails;
     }
+/**
+ * Procesa una declaración `inlineIfStatement`, evaluando la condición y los bloques `then` y `else`.
+ * 
+ * @method visitInlineIfStatement
+ * 
+ * @param {Object} ctx El contexto de la declaración `inlineIfStatement`, que contiene la condición, el bloque `then` y el bloque `else`.
+ * @returns {Object} Un objeto que representa la declaración `inlineIfStatement`, con el tipo, la condición y los bloques evaluados.
+ */
+visitInlineIfStatement(ctx) {
+    // Evaluar la condición
+    const condition = this.visit(ctx.expression());
+
+    // Evaluar el bloque `then`
+    const thenStatement = this.visit(ctx.statement(0));
+
+    // Evaluar el bloque `else`
+    const elseStatement = this.visit(ctx.statement(1));
+
+    // Crear el objeto de detalles para el inline if
+    const inlineIfDetails = {
+        type: 'InlineIfStatement',
+        condition,
+        thenStatement,
+        elseStatement,
+        id: this.attributeId++
+    };
+
+    // Registrar los detalles en los resultados
+    this.addAttribute(inlineIfDetails);
+
+    return inlineIfDetails;
+}
 
     /*
     ifStatement: 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
