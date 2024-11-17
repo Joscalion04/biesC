@@ -172,28 +172,30 @@ class Loader extends biesGrammarVisitor {
      */
     processDeclaration(ctx, declarationType) {
         const name = ctx.ID().getText();
-        
+
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
 
-        // Visitamos la expresión asociada a la declaración para obtener su valor
+        // Visitamos la expresión asociada a la declaración
         const value = this.visit(ctx.expression());
+        
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
 
         const lambda = value.statements?.value;
+
         // Si el valor es una LambdaExpression, la procesamos
         if (lambda && lambda.type === 'LambdaExpression') {
              return this.processLambda(name, lambda, value);
         } else {
-            // Guardamos los detalles de la declaración en el contexto
             const details = {
                 type: declarationType,
                 name,
                 value,
                 id: this.attributeId++
             };
+            
             if (this.scopeStack.length === 0) {
                 this.addAttribute(details);
             }
@@ -211,25 +213,74 @@ class Loader extends biesGrammarVisitor {
      * @param {Object} value El valor completo de la lambda, incluyendo sus detalles.
      */
     processLambda(name, lambda, value) {
-        // Inicializamos atributos de la función lambda
+        // Inicializamos atributos de la función lambda principal
         this.functionAttributes[name] = this.initializeAttributes();
-        // Detalles de la función
-        const functionDetails = {
-            type: 'FunctionDeclaration',
+        
+        // Función recursiva para procesar lambdas anidadas
+        const processNestedLambda = (lambda, parentName, depth = 0) => {
+            if (lambda.type === 'LambdaExpression') {
+                // Crear un nombre único para esta lambda
+                const lambdaName = `${parentName}_lambda_${depth}`;
+                
+                // Inicializar atributos para esta lambda específica
+                this.functionAttributes[lambdaName] = this.initializeAttributes();
+                
+                const functionDetails = {
+                    type: 'LambdaExpression',
+                    name: lambdaName,
+                    params: lambda.params,
+                    body: lambda.body,
+                    id: this.attributeId++,
+                    parentFunction: parentName
+                };
+
+                // Si el cuerpo es otra lambda, procesarla recursivamente
+                if (lambda.body.type === 'LambdaExpression') {
+                    const nestedLambda = processNestedLambda(lambda.body, lambdaName, depth + 1);
+                    
+                    // Agregamos la lambda anidada a la secuencia de su padre
+                    this.functionAttributes[lambdaName].secuencia.push({
+                        type: 'LambdaExpression',
+                        params: nestedLambda.params,
+                        body: nestedLambda.body,
+                        id: this.attributeId++
+                    });
+                    
+                    functionDetails.body = nestedLambda;
+                } else {
+                    // Si no es una lambda anidada, agregamos el cuerpo a la secuencia
+                    this.functionAttributes[lambdaName].secuencia.push({
+                        type: 'LambdaExpression',
+                        params: lambda.params,
+                        body: lambda.body,
+                        id: this.attributeId++
+                    });
+                }
+
+                return functionDetails;
+            }
+            return lambda;
+        };
+
+        // Procesamos la lambda inicial y sus anidaciones
+        const functionDetails = processNestedLambda(lambda, name);
+
+        // Agregamos la lambda principal al contexto global
+        const mainFunctionDetails = {
+            type: 'LambdaExpression',
             name,
-            params: lambda.params,
+            params: lambda.type === 'LambdaExpression' ? lambda.params : [],
+            body: functionDetails,
             id: this.attributeId++
         };
 
-        // Agregamos la función al contexto
         if (this.scopeStack.length === 0) {
-            this.addAttribute(functionDetails);
+            this.addAttribute(mainFunctionDetails);
         }
 
         // Procesamos el cuerpo de la lambda
         const body = Array.isArray(lambda.body) ? lambda.body : [value];
         this.functionAttributes[name].secuencia.push(...body);
-        
         return functionDetails;
     }
 
@@ -267,28 +318,35 @@ class Loader extends biesGrammarVisitor {
      * @returns {Object} Un objeto que representa la expresión lambda.
      */
     visitLambdaExpression(ctx) {
-        const params = ctx.parameterList()
-            ? ctx.parameterList().ID().map(param => param.getText())
-            : [];
-            
-        const body = ctx.block()
-            ? ctx.block().statement().map(stmt => this.visit(stmt))
-            : this.visit(ctx.expression());
+        let params = [];
+        let body;
 
-        return {
-            type: 'Block',
-            statements: {
-                type: 'ReturnStatement',
-                value: {
-                    type: 'LambdaExpression',
-                    params,
-                    body,
-                    id: this.attributeId++
-                },
-                id: this.attributeId++
-            },
+        // Manejo de parámetros
+        if (ctx.parameterList()) {
+            params = ctx.parameterList().ID().map(param => param.getText());
+        }
+
+        // Manejo del cuerpo de la lambda
+        if (ctx.block()) {
+            body = this.visit(ctx.block());
+        } else if (ctx.lambdaExpression()) {
+            // Para lambdas anidadas
+            const nestedLambda = this.visit(ctx.lambdaExpression());
+            body = nestedLambda;
+        } else if (ctx.expression()) {
+            body = this.visit(ctx.expression());
+        } else if (ctx.ifThenStatement()) {
+            body = this.visit(ctx.ifThenStatement());
+        }
+
+        const lambdaDetails = {
+            type: 'LambdaExpression',
+            params,
+            body,
             id: this.attributeId++
         };
+
+        return lambdaDetails;
     }
 
 

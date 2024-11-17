@@ -71,7 +71,7 @@ function parseBIESCode(inputFile) {
 
   // Muestra los resultados procesados por el loader (atributos)
   console.log("Atributos procesados por Loader:");
-  //  loader.getResults();  // Muestra el resultado final
+   loader.getResults();  // Muestra el resultado final
 
   /**
   * Crea una instancia del transpiler `Transpiler`.
