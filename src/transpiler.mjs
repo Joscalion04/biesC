@@ -77,7 +77,10 @@ class Transpiler {
         const statements = Array.isArray(block.statements) ? block.statements : [block.statements];
         statements.forEach(statement => this.processAttribute(statement, statements, null, 'block'));
     }    
-
+    transpileBlockThen(blockThen) {
+        const statements = Array.isArray(blockThen.statements) ? blockThen.statements : [blockThen.statements];
+        statements.forEach(statement => this.processAttribute(statement, statements, null, 'blockThen'));
+    }   
     // Transpilado de valores (declaraciones, expresiones, etc.)
     transpileValue(value) {
         this.processAttribute(value, [], null, 'value');
@@ -109,6 +112,14 @@ class Transpiler {
                 this.attributesSet.add(attribute.condition.id);
                 this.transpileIfStatement(attribute);
             } break;
+            case 'IfThenStatement': {
+                if (this.attributesSet.has(attribute.id)) {
+                    return;
+                }
+                this.attributesSet.add(attribute.condition.id);
+                this.transpileIfThenStatement(attribute);
+            } break;
+            
             case 'Block': {
                 for (let j = index; j < attributes.length; j++) {
                     if (
@@ -305,7 +316,23 @@ class Transpiler {
         this.instructions.push('RET');
         this.incrementActualIfIndex();
     }
+    transpileIfThenStatement(node) {
+        
+        // Cargar y procesar la condición del `if-then`
+        this.processIfBranchThen(node.condition, node.thenStatement, "if");
+
+          // Procesar los `subsequentStatements`
+          if (node.subsequentStatements) {
+            console.log('SubsequentStatements: ', node.subsequentStatements);
+            node.subsequentStatements.forEach(statement => {
+                this.processAttribute(statement, node.subsequentStatements, null, 'statement');
+            });
+        }
     
+    }
+    processIfBranchThen(condition, body, label) {
+        this.addBranchThen(condition, body, label);
+    }
     transpileIfStatement(node) {
         // Procesar el bloque del `if`
         this.processIfBranch(node.condition, node.body, "if");
@@ -344,6 +371,22 @@ class Transpiler {
     
         if (body) {
             this.transpileBlock(body);
+        }
+    
+        const indexToInsert = this.instructionIndexes.pop() - 1;
+        const conditionText = condition ? `${condition.left} ${condition.operator} ${condition.right}` : "";
+        this.instructions.splice(
+            indexToInsert + 1,
+            0,
+            `BF ${this.ifIndexes.pop()}              ; ${label}(${conditionText})`
+        );
+    }
+    addBranchThen(condition, body, label) {
+        this.ifIndexes.push(1);
+        this.instructionIndexes.push(this.instructions.length);
+    
+        if (body) {
+            this.transpileBlockThen(body);
         }
     
         const indexToInsert = this.instructionIndexes.pop() - 1;

@@ -127,6 +127,7 @@ class Loader extends biesGrammarVisitor {
     * @returns {void} Este método no devuelve ningún valor.
     */
     addAttribute(details) {
+     
         if (this.currentFunction && this.functionAttributes[this.currentFunction]) {
             this.functionAttributes[this.currentFunction].secuencia.push(details);
         }
@@ -457,12 +458,12 @@ class Loader extends biesGrammarVisitor {
         if (ctx.functionDeclaration()) {
             return this.visit(ctx.functionDeclaration());
         }
-        if (ctx.inlineIfStatement()) { 
-            return this.visit(ctx.inlineIfStatement());
-        }
-
         if (ctx.ifStatement()) {
             return this.visit(ctx.ifStatement());
+        }
+        if (ctx.ifThenStatement()) {
+           
+            return this.visit(ctx.ifThenStatement());
         }
         if (ctx.letDeclaration()) {
             return this.visit(ctx.letDeclaration());
@@ -478,6 +479,9 @@ class Loader extends biesGrammarVisitor {
         }
         if (ctx.block()) {
             return this.visit(ctx.block());
+        }
+        if (ctx.blockThen()) {
+            return this.visit(ctx.blockThen());
         }
     }
 
@@ -618,38 +622,56 @@ class Loader extends biesGrammarVisitor {
         return expressionDetails;
     }
 /**
- * Procesa una declaración `inlineIfStatement`, evaluando la condición y los bloques `then` y `else`.
+ * Processes an inline `if-then` statement, evaluating the condition, `then` block, and `else` block.
  * 
- * @method visitInlineIfStatement
+ * @method visitifThenStatement
  * 
- * @param {Object} ctx El contexto de la declaración `inlineIfStatement`, que contiene la condición, el bloque `then` y el bloque `else`.
- * @returns {Object} Un objeto que representa la declaración `inlineIfStatement`, con el tipo, la condición y los bloques evaluados.
+ * @param {Object} ctx The context of the `ifThenStatement`, containing the condition, `then` block, and `else` block.
+ * @returns {Object} An object representing the `ifThenStatement`, with its type, condition, and evaluated blocks.
  */
-visitInlineIfStatement(ctx) {
-    // Evaluar la condición
+visitIfThenStatement(ctx) {
+    // Evaluate the condition
     const condition = this.visit(ctx.expression());
+  
+    // Visit the `then` block
+    const thenStatement = ctx.blockThen() ? this.visit(ctx.blockThen()) : null;
 
-    // Evaluar el bloque `then`
-    const thenStatement = this.visit(ctx.statement(0));
+    const subsequentStatements = ctx.statement()
+        ? ctx.statement().map(stmt => this.visit(stmt))
+        : [];
 
-    // Evaluar el bloque `else`
-    const elseStatement = this.visit(ctx.statement(1));
+      
 
-    // Crear el objeto de detalles para el inline if
-    const inlineIfDetails = {
-        type: 'InlineIfStatement',
+    // Create details for the `if-then` statement
+    const ifThenStatementDetails = {
+        type: 'IfThenStatement',
         condition,
         thenStatement,
-        elseStatement,
+        subsequentStatements,
+         id: this.attributeId++
+    };
+
+    // Register the details in the results
+    this.addAttribute(ifThenStatementDetails);
+
+    return ifThenStatementDetails;
+}
+
+
+visitBlockThen(ctx) {
+    
+    const statements = ctx.statement().map(stmt => this.visit(stmt));
+    
+    const blockDetails = {
+        type: 'BlockThen',
+        statements,
         id: this.attributeId++
     };
 
-    // Registrar los detalles en los resultados
-    this.addAttribute(inlineIfDetails);
+    this.addAttribute(blockDetails);
 
-    return inlineIfDetails;
-}
-
+    return blockDetails;
+}   
     /*
     ifStatement: 'if' '(' expression ')' block (elseIfStatement | elseStatement)?;
 
