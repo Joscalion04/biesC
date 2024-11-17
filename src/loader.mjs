@@ -28,7 +28,7 @@ class Loader extends biesGrammarVisitor {
         this.currentFunction = this.globalContext;
         this.functionAttributes = {};
         this.functionAttributes[this.globalContext] = this.initializeAttributes();
-        this.scopeStack = [{}];  // Se añade la pila de alcance
+        this.scopeStack = [];  // Se añade la pila de alcance
         this.attributeId = 0;
         this.processingLambda = false;
     }
@@ -150,8 +150,9 @@ class Loader extends biesGrammarVisitor {
             value,
             id: this.attributeId++
         };
-        
-        this.addAttribute(returnDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(returnDetails);
+        }
         return returnDetails;
     }
 
@@ -193,7 +194,9 @@ class Loader extends biesGrammarVisitor {
                 value,
                 id: this.attributeId++
             };
-            this.addAttribute(details);
+            if (this.scopeStack.length === 0) {
+                this.addAttribute(details);
+            }
             return details;
         }
     }
@@ -219,7 +222,9 @@ class Loader extends biesGrammarVisitor {
         };
 
         // Agregamos la función al contexto
-        this.addAttribute(functionDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(functionDetails);
+        }
 
         // Procesamos el cuerpo de la lambda
         const body = Array.isArray(lambda.body) ? lambda.body : [value];
@@ -324,7 +329,9 @@ class Loader extends biesGrammarVisitor {
                 };
                 
                 if (!this.processingLambda) {
-                    this.addAttribute(expressionDetails);
+                    if (this.scopeStack.length === 0) {
+                        this.addAttribute(expressionDetails);
+                    }
                 }
                 
                 result = expressionDetails;
@@ -363,7 +370,10 @@ class Loader extends biesGrammarVisitor {
                 right: comparisonValue,
                 id: this.attributeId++
             };
-            this.addAttribute(assignmentDetails);
+
+            if (this.scopeStack.length === 0) {
+                this.addAttribute(assignmentDetails);
+            }
             result = assignmentDetails;
         }
 
@@ -386,7 +396,9 @@ class Loader extends biesGrammarVisitor {
                 right: factorValue,
                 id: this.attributeId++
             };
-            this.addAttribute(comparisonDetails);
+            if (this.scopeStack.length === 0) {
+                this.addAttribute(comparisonDetails);
+            }
             result = comparisonDetails;
         }
 
@@ -500,7 +512,9 @@ class Loader extends biesGrammarVisitor {
             id: this.attributeId++
         };
 
-        this.addAttribute(functionCallDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(functionCallDetails);
+        }
         return functionCallDetails;
     }
 
@@ -528,7 +542,9 @@ class Loader extends biesGrammarVisitor {
         };
         // Solo añadimos el print al contexto actual si no estamos dentro de una lambda
         if (!this.processingLambda) {
-            this.addAttribute(printDetails);
+            if (this.scopeStack.length === 0) {
+                this.addAttribute(printDetails);
+            }
         }
 
         return printDetails;
@@ -561,7 +577,9 @@ class Loader extends biesGrammarVisitor {
             id: this.attributeId++
         };
 
-        this.addAttribute(functionDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(functionDetails);
+        }
 
         // Crear nuevo contexto de función si no existe
         if (!this.functionAttributes[functionName]) {
@@ -598,7 +616,9 @@ class Loader extends biesGrammarVisitor {
             id: this.attributeId++
         };
 
-        this.addAttribute(expressionDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(expressionDetails);
+        }
         return expressionDetails;
     }
 /**
@@ -682,7 +702,9 @@ visitBlockThen(ctx) {
             id: this.attributeId++
         };
     
-        this.addAttribute(ifDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(ifDetails);
+        }
     
         if (ctx.elseIfStatement()) {
             ifDetails.elseIfStatement = this.visit(ctx.elseIfStatement());
@@ -716,7 +738,9 @@ visitBlockThen(ctx) {
             id: this.attributeId++
         };
 
-        this.addAttribute(elseIfDetails);
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(elseIfDetails);
+        }
 
         if (ctx.elseIfStatement()) {
             elseIfDetails.elseIfStatement = this.visit(ctx.elseIfStatement());
@@ -746,8 +770,10 @@ visitBlockThen(ctx) {
             body,
             id: this.attributeId++
         };
-    
-        this.addAttribute(elseDetails);
+
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(elseDetails);
+        }
     
         return elseDetails;
     }  
@@ -768,8 +794,10 @@ visitBlockThen(ctx) {
             statements,
             id: this.attributeId++
         };
-    
-        this.addAttribute(blockDetails);
+
+        if (this.scopeStack.length === 0) {
+            this.addAttribute(blockDetails);
+        }
     
         return blockDetails;
     }   
