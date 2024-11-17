@@ -162,6 +162,9 @@ class Transpiler {
                     this.handleLambdaExpression(attribute, attributes, index);
                 }
             } break;
+            case 'LetInDeclaration': {
+                this.handleDeclaration(attribute, attributes, index, type);
+            } break;
             case 'ElseIfStatement':
             case 'ElseStatement':
                 break;
@@ -234,7 +237,7 @@ class Transpiler {
 
     // Manejar declaraciones Let/Const
     handleDeclaration(attribute, attributes, index, type) {
-        if (this.attributesSet.has(attribute.id) || attribute.value.type === 'LambdaExpression') {
+        if (this.attributesSet.has(attribute.id) || attribute.value ? attribute.value.type === 'LambdaExpression' : false) {
             return; // Si el atributo ya fue procesado, salir
         }
 
@@ -254,29 +257,42 @@ class Transpiler {
     }
 
     // Método auxiliar: verifica si un atributo está en futuros bloques
-    isAttributeInFutureBlocks(attribute, attributes, startIndex) {
-        for (let j = startIndex + 1; j < attributes.length; j++) {
-            const currentAttribute = attributes[j];
+    isAttributeInFutureBlocks(currentAttribute, allAttributes, startIndex) {
+        for (let j = startIndex + 1; j < allAttributes.length; j++) {
+            const futureAttribute = allAttributes[j];
 
             // Validar si es un bloque
-            if (currentAttribute.type === 'Block') {
+            if (futureAttribute.type === 'Block') {
                 // Verificar si el atributo está dentro de las declaraciones del bloque
-                for (const statement of currentAttribute.statements) {
-                    if (statement.id === attribute.id) {
+                for (const statement of futureAttribute.statements) {
+                    if (statement.id === currentAttribute.id) {
                         return true; // Atributo encontrado
                     }
                 }
-            } else if (currentAttribute.type === 'FunctionCall') {
+            } else if (futureAttribute.type === 'FunctionCall') {
                 // Verificar si el atributo está dentro de los argumentos de la llamada a función
-                for (const arg of currentAttribute.args) {
-                    if (arg.id === attribute.id) {
+                for (const arg of futureAttribute.args) {
+                    if (arg.id === currentAttribute.id) {
                         return true; // Atributo encontrado
                     }
                 }
-            } else if (currentAttribute.type === 'BinaryExpression') {
+            } else if (futureAttribute.type === 'BinaryExpression') {
                 // Verificar si el atributo está dentro de la expresión binaria
-                if (currentAttribute.left.id === attribute.id || currentAttribute.right.id === attribute.id) {
+                if (futureAttribute.left.id === currentAttribute.id || futureAttribute.right.id === currentAttribute.id) {
                     return true; // Atributo encontrado
+                }
+            } else if (futureAttribute.type === 'LetInDeclaration') {
+                // Verificar si el atributo está dentro de las declaraciones LetIn
+                for (const declaration of futureAttribute.declarations) {
+                    if (declaration.id === currentAttribute.id) {
+                        return true; // Atributo encontrado
+                    }
+                }
+                // Verificar si el atributo está dentro del cuerpo de la declaración LetIn
+                for (const statement of futureAttribute.body.statements) {
+                    if (statement.id === currentAttribute.id) {
+                        return true; // Atributo encontrado
+                    }
                 }
             }
         }
@@ -360,55 +376,61 @@ class Transpiler {
     *                                      o un objeto con una propiedad `functionName`.
     */
     loadValue(value, name, type) {
-        
-        let bindingIndex = this.getBindingIndex(name ? name : value);
-        
+        let bindingIndex = this.getBindingIndex(name || value);
+    
+        // Si el binding no existe, cargamos el valor y lo asociamos si es necesario
         if (bindingIndex[0] === -1) {
-
-            if (typeof value === 'number') {
-
-                this.instructions.push(`LDV ${value}`);
-                this.incrementActualIfIndex();
-
+            // Manejar valores literales (números y cadenas)
+            if (typeof value === 'number' || typeof value === 'string') {
+                this.loadLiteral(value);
+    
                 if (type === 'declaration') {
-                    this.bindings[0].binding.push({name: name, value: value});
-                    bindingIndex = this.getBindingIndex(name)
-                    this.instructions.push(`BST ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name ? name : value}`); // Asociar al binding index
-                }
-
-            } else if (typeof value === 'string') {
-
-                this.instructions.push(`LDV "${value}"`);
-                this.incrementActualIfIndex();
-
-                if (type === 'declaration') {
-                    this.bindings[0].binding.push({name: name, value: value});
-                    bindingIndex = this.getBindingIndex(name)
-                    this.instructions.push(`BST ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name ? name : value}`); // Asociar al binding index
-                }
-
-            } else if (typeof value === 'object') {
-
-                if (value.type === 'FunctionCall') {
-
-                    this.transpileFunctionCall(value);
-
-                } else if (value.type === 'BinaryExpression') {
-
-                    this.transpileExpression(value, name);
-
-                } else {
-
-                    this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
-                    this.incrementActualIfIndex();
-
+                    this.addBinding(name, value);
+                    bindingIndex = this.getBindingIndex(name);
+                    this.bindToIndex(bindingIndex, name || value);
                 }
             }
+            // Para valores complejos (funciones, expresiones binarias, etc.)
+            else if (typeof value === 'object') {
+                this.handleComplexValue(value, name);
+            }
         } else {
-            this.instructions.push(`BLD ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name ? name : value}`); // Asociar al binding index
+            // Si el binding ya existe, cargamos desde el índice
+            this.instructions.push(`BLD ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name || value}`);  // Asociación de binding
             this.incrementActualIfIndex();
         }
     }
+    
+    // Función auxiliar para cargar valores literales
+    loadLiteral(value) {
+        const formattedValue = typeof value === 'string' ? `"${value}"` : value;
+        this.instructions.push(`LDV ${formattedValue}`);
+        this.incrementActualIfIndex();
+    }
+    
+    // Función auxiliar para agregar un binding
+    addBinding(name, value) {
+        this.bindings[0].binding.push({ name, value });
+    }
+    
+    // Función auxiliar para asociar al índice de binding
+    bindToIndex(bindingIndex, label) {
+        this.instructions.push(`BST ${bindingIndex[0]} ${bindingIndex[1]}                              ;${label}`);
+        this.incrementActualIfIndex();
+    }
+    
+    // Función auxiliar para manejar valores complejos
+    handleComplexValue(value, name) {
+        if (value.type === 'FunctionCall') {
+            this.transpileFunctionCall(value);
+        } else if (value.type === 'BinaryExpression') {
+            this.transpileExpression(value, name);
+        } else {
+            this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
+            this.incrementActualIfIndex();
+        }
+    }
+    
 
     /** 
     * Carga una instrucción de comparación basada en el operador proporcionado.
@@ -503,15 +525,21 @@ class Transpiler {
     * - `value`: El valor que se va a cargar.
     */
     transpileValueDeclaration(node) {
-        if (node.value.type === 'LambdaExpression') {
+        if (node.value ? node.value.type === 'LambdaExpression' : false) {
             // Manejo especial para LambdaExpression
             //this.instructions.push(`LDF $${node.id}`); // Cargar la función lambda
            // this.instructions.push(`BLD 0 ${bindingIndex}`); // Asociar al binding index
+        } else if (node.type === 'LetInDeclaration') {
+            // Recorremos las declaraciones LetIn
+            node.declarations.forEach(declaration => {
+                this.transpileValue(declaration);
+            });
+            // Procesamos el cuerpo de la declaración LetIn
+            this.transpileBlock(node.body);
         } else {
             this.loadValue(node.value, node.name ? node.name : '', 'declaration'); // Manejar el valor normalmente
             this.incrementActualIfIndex();
         }
-        
     }
 
     /** 
