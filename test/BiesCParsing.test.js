@@ -27,6 +27,11 @@ if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
 }
 
+// Función para eliminar caracteres de escape de color
+const removeColorCodes = (str) => {
+    return str.replace(/\x1b\[[0-9;]*m/g, ''); // Elimina todos los códigos de color
+};
+
 testFiles.forEach((file) => {
     test(`Testing ${file}`, (done) => {
         const filePath = `${basePath}/${file}`;
@@ -47,15 +52,17 @@ testFiles.forEach((file) => {
                 // Validar que no haya errores fatales
                 expect(error).toBeNull();
 
-                // Verificar si hay salida estándar y guardar en el archivo de salida
+                // Limpiar los códigos de color antes de guardar en el archivo de salida
                 if (stdout) {
-                    fs.writeFileSync(outFile, stdout);
+                    const cleanStdout = removeColorCodes(stdout);
+                    fs.writeFileSync(outFile, cleanStdout);
                     expect(fs.existsSync(outFile)).toBe(true);
                 }
 
-                // Verificar si hay errores estándar y guardar en el archivo de errores
+                // Limpiar los códigos de color antes de guardar en el archivo de errores
                 if (stderr) {
-                    fs.writeFileSync(errFile, stderr);
+                    const cleanStderr = removeColorCodes(stderr);
+                    fs.writeFileSync(errFile, cleanStderr);
                     expect(fs.existsSync(errFile)).toBe(true);
                 } else {
                     // Si no hay errores, asegurar que el archivo de error no exista
