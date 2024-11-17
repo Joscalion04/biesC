@@ -169,14 +169,13 @@ class Loader extends biesGrammarVisitor {
      */
     processDeclaration(ctx, declarationType) {
         const name = ctx.ID().getText();
-
+        
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
 
         // Visitamos la expresión asociada a la declaración para obtener su valor
         const value = this.visit(ctx.expression());
-
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
 
@@ -184,7 +183,7 @@ class Loader extends biesGrammarVisitor {
 
         // Si el valor es una LambdaExpression, la procesamos
         if (lambda && lambda.type === 'LambdaExpression') {
-            this.processLambda(name, lambda, value);
+            return this.processLambda(name, lambda, value);
         } else {
             // Guardamos los detalles de la declaración en el contexto
             const details = {
@@ -224,6 +223,7 @@ class Loader extends biesGrammarVisitor {
         // Procesamos el cuerpo de la lambda
         const body = Array.isArray(lambda.body) ? lambda.body : [value];
         this.functionAttributes[name].secuencia.push(...body);
+        return functionDetails;
     }
 
     /**
