@@ -55,8 +55,7 @@ class Transpiler {
             const bindingIndex = this.getBindingIndexByName(functionName);
             // ponemos el binding en la primera posición
             this.bindings.unshift(this.bindings.splice(bindingIndex, 1)[0]);
-            
-            this.instructions.push('=================================');
+
             this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
 
             const attributes = this.functionAttributes[functionName].secuencia;
