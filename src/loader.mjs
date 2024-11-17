@@ -216,22 +216,22 @@ class Loader extends biesGrammarVisitor {
         // Inicializamos atributos de la función lambda principal
         this.functionAttributes[name] = this.initializeAttributes();
         
-        // Función recursiva mejorada para procesar lambdas anidadas
+        // Función recursiva para procesar lambdas anidadas
         const processNestedLambda = (lambda, parentName, depth = 0) => {
             if (lambda.type === 'LambdaExpression') {
-                // Crear un nombre único para esta lambda usando el nombre del padre
+                // Crear un nombre único para esta lambda
                 const lambdaName = `${parentName}_lambda_${depth}`;
                 
                 // Inicializar atributos para esta lambda específica
                 this.functionAttributes[lambdaName] = this.initializeAttributes();
                 
                 const functionDetails = {
-                    type: 'FunctionDeclaration',
+                    type: 'LambdaExpression',
                     name: lambdaName,
                     params: lambda.params,
                     body: lambda.body,
                     id: this.attributeId++,
-                    parentFunction: parentName // Agregamos referencia al padre
+                    parentFunction: parentName
                 };
 
                 // Si el cuerpo es otra lambda, procesarla recursivamente
@@ -240,8 +240,9 @@ class Loader extends biesGrammarVisitor {
                     
                     // Agregamos la lambda anidada a la secuencia de su padre
                     this.functionAttributes[lambdaName].secuencia.push({
-                        type: 'NestedLambda',
-                        lambda: nestedLambda,
+                        type: 'LambdaExpression',
+                        params: nestedLambda.params,
+                        body: nestedLambda.body,
                         id: this.attributeId++
                     });
                     
@@ -249,7 +250,8 @@ class Loader extends biesGrammarVisitor {
                 } else {
                     // Si no es una lambda anidada, agregamos el cuerpo a la secuencia
                     this.functionAttributes[lambdaName].secuencia.push({
-                        type: 'LambdaBody',
+                        type: 'LambdaExpression',
+                        params: lambda.params,
                         body: lambda.body,
                         id: this.attributeId++
                     });
@@ -265,7 +267,7 @@ class Loader extends biesGrammarVisitor {
 
         // Agregamos la lambda principal al contexto global
         const mainFunctionDetails = {
-            type: 'FunctionDeclaration',
+            type: 'LambdaExpression',
             name,
             params: lambda.type === 'LambdaExpression' ? lambda.params : [],
             body: functionDetails,
@@ -278,8 +280,9 @@ class Loader extends biesGrammarVisitor {
 
         // Agregamos el valor completo a la secuencia de la función principal
         this.functionAttributes[name].secuencia.push({
-            type: 'MainLambda',
-            value,
+            type: 'LambdaExpression',
+            params: lambda.params,
+            body: functionDetails.body,
             id: this.attributeId++
         });
 
