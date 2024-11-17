@@ -1,10 +1,6 @@
 let {
     const a = "Hola";
-    let {
-        const b = "hola"
-    } in {
-        print(b)
-    }
+    
 } in {
     print(a)
 }

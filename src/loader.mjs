@@ -777,72 +777,11 @@ class Loader extends biesGrammarVisitor {
     * @returns {Object} Un objeto que contiene los atributos de las funciones, con sus respectivos detalles y secuencia.
     */
     getFunctionAttributes() {
-        this.transformLetDeclarationsWithLambdas();
         return this.functionAttributes;
     }
 
-    /** 
-    * Reemplaza las declaraciones `LetDeclaration` que contienen expresiones de lambda en el cuerpo de la función
-    * con la secuencia de instrucciones adecuada para la lambda. Si el cuerpo de la lambda es una expresión binaria o 
-    * un bloque de sentencias, se procesa y reemplaza la declaración `LetDeclaration` con el cuerpo de la lambda.
-    * Además, guarda la secuencia de la función y el cuerpo de la lambda en los atributos de la función.
-    * 
-    * @method transformLetDeclarationsWithLambdas
-    * 
-    * @throws {Error} Si el cuerpo de la lambda no es reconocido o tiene un formato inesperado.
-    */
-    transformLetDeclarationsWithLambdas() {
-        console.log("Transformando LetDeclarations con Lambdas...");
-      
-        // Recorremos las funciones en el diccionario de funciones
-        for (const functionName in this.functionAttributes) {
-            const attributes = this.functionAttributes[functionName];
-            const secuencia = attributes.secuencia;
-    
-            // Recorremos la secuencia de la función principal
-            for (let i = 0; i < secuencia.length; i++) {
-                const attr = secuencia[i];
-
-                // Buscamos las LetDeclarations con LambdaExpressions
-                if (attr.type === 'LetDeclaration' && attr.value && Array.isArray(attr.value) && attr.value[0][0]?.type === 'LambdaExpression') {
-                    const lambdaExpression = attr.value[0][0]; // La LambdaExpression
-                    
-                    console.log("Cuerpo de la lambda:", lambdaExpression.body); // Verificar la estructura del cuerpo
-                
-                    let functionBody;
-                
-                    if (lambdaExpression.body && lambdaExpression.body.type === 'BinaryExpression') {
-                        // Si el cuerpo es una BinaryExpression, procesarlo correctamente
-                        functionBody = [{
-                            type: 'BinaryExpression',
-                            left: lambdaExpression.body.left,
-                            operator: lambdaExpression.body.operator,
-                            right: lambdaExpression.body.right
-                        }];
-                    } else if (lambdaExpression.body && Array.isArray(lambdaExpression.body)) {
-                        // Si el cuerpo es un bloque de sentencias
-                        functionBody = lambdaExpression.body;
-                    } else {
-                        // Si no se reconoce el tipo del cuerpo
-                        throw new Error("Cuerpo de la lambda no reconocido");
-                    }
-                
-                    // Reemplazamos la LetDeclaration con el cuerpo de la lambda
-                    secuencia.splice(i, 1, ...functionBody);
-                
-                    // Guardamos la secuencia de la función como un diccionario separado
-                    if (!this.functionAttributes[attr.id]) {
-                        this.functionAttributes[attr.id] = this.initializeAttributes();
-                    }
-                    // Guardamos el cuerpo de la lambda en la propiedad body
-                    this.functionAttributes[attr.id].secuencia = functionBody;
-                }
-            }
-        }
-    }
 
     getResults() {
-        //this.transformLetDeclarationsWithLambdas();
         for (const functionName in this.functionAttributes) {
             const attributes = this.functionAttributes[functionName];
             console.log(`Función: ${functionName}`);
