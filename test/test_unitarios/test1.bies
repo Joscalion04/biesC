@@ -21,6 +21,10 @@ if (x > 5) {
     let result = add(x, y);
 } else if (y < 5) {
     let result = multiply(x, y);
+} else if (x == 5) {
+    let result = add(x, y);
+} else if (y == 5) {
+    let result = multiply(x, y);
 } else {
     let result = add(x, y);
 }

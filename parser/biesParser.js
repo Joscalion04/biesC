@@ -19,7 +19,7 @@ const serializedATN = [4,1,39,267,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
 15,5,15,185,8,15,10,15,12,15,188,9,15,1,16,1,16,5,16,192,8,16,10,16,12,16,
 195,9,16,1,16,1,16,1,17,1,17,1,17,1,17,1,17,1,17,1,17,3,17,206,8,17,1,18,
 1,18,1,18,1,18,1,18,1,18,1,18,1,18,3,18,216,8,18,1,19,1,19,1,19,1,20,1,20,
-3,20,223,8,20,1,20,1,20,1,20,1,20,1,20,3,20,230,8,20,1,20,1,20,1,20,1,20,
+1,20,1,20,1,20,1,20,3,20,227,8,20,1,20,1,20,3,20,231,8,20,1,20,1,20,1,20,
 1,20,1,20,3,20,238,8,20,3,20,240,8,20,1,21,1,21,1,21,1,21,1,21,1,22,1,22,
 1,22,1,22,1,22,1,22,5,22,253,8,22,10,22,12,22,256,9,22,1,23,1,23,5,23,260,
 8,23,10,23,12,23,263,9,23,1,23,1,23,1,23,0,0,24,0,2,4,6,8,10,12,14,16,18,
@@ -75,20 +75,20 @@ const serializedATN = [4,1,39,267,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
 209,5,28,0,0,209,210,5,5,0,0,210,211,3,20,10,0,211,212,5,6,0,0,212,215,3,
 32,16,0,213,216,3,36,18,0,214,216,3,38,19,0,215,213,1,0,0,0,215,214,1,0,
 0,0,215,216,1,0,0,0,216,37,1,0,0,0,217,218,5,30,0,0,218,219,3,32,16,0,219,
-39,1,0,0,0,220,222,5,5,0,0,221,223,3,18,9,0,222,221,1,0,0,0,222,223,1,0,
-0,0,223,224,1,0,0,0,224,225,5,6,0,0,225,229,5,19,0,0,226,230,3,32,16,0,227,
-230,3,40,20,0,228,230,3,20,10,0,229,226,1,0,0,0,229,227,1,0,0,0,229,228,
-1,0,0,0,230,240,1,0,0,0,231,232,3,18,9,0,232,237,5,19,0,0,233,238,3,32,16,
-0,234,238,3,40,20,0,235,238,3,20,10,0,236,238,3,44,22,0,237,233,1,0,0,0,
-237,234,1,0,0,0,237,235,1,0,0,0,237,236,1,0,0,0,238,240,1,0,0,0,239,220,
-1,0,0,0,239,231,1,0,0,0,240,41,1,0,0,0,241,242,5,34,0,0,242,243,5,20,0,0,
+39,1,0,0,0,220,221,3,18,9,0,221,226,5,19,0,0,222,227,3,40,20,0,223,227,3,
+20,10,0,224,227,3,44,22,0,225,227,3,32,16,0,226,222,1,0,0,0,226,223,1,0,
+0,0,226,224,1,0,0,0,226,225,1,0,0,0,227,240,1,0,0,0,228,230,5,5,0,0,229,
+231,3,18,9,0,230,229,1,0,0,0,230,231,1,0,0,0,231,232,1,0,0,0,232,233,5,6,
+0,0,233,237,5,19,0,0,234,238,3,40,20,0,235,238,3,20,10,0,236,238,3,32,16,
+0,237,234,1,0,0,0,237,235,1,0,0,0,237,236,1,0,0,0,238,240,1,0,0,0,239,220,
+1,0,0,0,239,228,1,0,0,0,240,41,1,0,0,0,241,242,5,34,0,0,242,243,5,20,0,0,
 243,244,3,20,10,0,244,245,5,21,0,0,245,43,1,0,0,0,246,247,5,28,0,0,247,248,
 5,5,0,0,248,249,3,20,10,0,249,250,5,6,0,0,250,254,3,46,23,0,251,253,3,2,
 1,0,252,251,1,0,0,0,253,256,1,0,0,0,254,252,1,0,0,0,254,255,1,0,0,0,255,
 45,1,0,0,0,256,254,1,0,0,0,257,261,5,29,0,0,258,260,3,2,1,0,259,258,1,0,
 0,0,260,263,1,0,0,0,261,259,1,0,0,0,261,262,1,0,0,0,262,264,1,0,0,0,263,
 261,1,0,0,0,264,265,5,30,0,0,265,47,1,0,0,0,30,51,67,74,81,88,90,97,103,
-110,113,117,122,126,133,142,145,150,157,172,177,186,193,205,215,222,229,
+110,113,117,122,126,133,142,145,150,157,172,177,186,193,205,215,226,230,
 237,239,254,261];
 
 
@@ -1039,71 +1039,71 @@ export default class biesParser extends antlr4.Parser {
 	        this.state = 239;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case 5:
+	        case 34:
 	            this.enterOuterAlt(localctx, 1);
 	            this.state = 220;
-	            this.match(biesParser.T__4);
-	            this.state = 222;
-	            this._errHandler.sync(this);
-	            _la = this._input.LA(1);
-	            if(_la===34) {
-	                this.state = 221;
-	                this.parameterList();
-	            }
-
-	            this.state = 224;
-	            this.match(biesParser.T__5);
-	            this.state = 225;
+	            this.parameterList();
+	            this.state = 221;
 	            this.match(biesParser.T__18);
-	            this.state = 229;
+	            this.state = 226;
 	            this._errHandler.sync(this);
-	            var la_ = this._interp.adaptivePredict(this._input,25,this._ctx);
+	            var la_ = this._interp.adaptivePredict(this._input,24,this._ctx);
 	            switch(la_) {
 	            case 1:
-	                this.state = 226;
-	                this.block();
-	                break;
-
-	            case 2:
-	                this.state = 227;
+	                this.state = 222;
 	                this.lambdaExpression();
 	                break;
 
-	            case 3:
-	                this.state = 228;
+	            case 2:
+	                this.state = 223;
 	                this.expression();
+	                break;
+
+	            case 3:
+	                this.state = 224;
+	                this.ifThenStatement();
+	                break;
+
+	            case 4:
+	                this.state = 225;
+	                this.block();
 	                break;
 
 	            }
 	            break;
-	        case 34:
+	        case 5:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 231;
-	            this.parameterList();
+	            this.state = 228;
+	            this.match(biesParser.T__4);
+	            this.state = 230;
+	            this._errHandler.sync(this);
+	            _la = this._input.LA(1);
+	            if(_la===34) {
+	                this.state = 229;
+	                this.parameterList();
+	            }
+
 	            this.state = 232;
+	            this.match(biesParser.T__5);
+	            this.state = 233;
 	            this.match(biesParser.T__18);
 	            this.state = 237;
 	            this._errHandler.sync(this);
 	            var la_ = this._interp.adaptivePredict(this._input,26,this._ctx);
 	            switch(la_) {
 	            case 1:
-	                this.state = 233;
-	                this.block();
-	                break;
-
-	            case 2:
 	                this.state = 234;
 	                this.lambdaExpression();
 	                break;
 
-	            case 3:
+	            case 2:
 	                this.state = 235;
 	                this.expression();
 	                break;
 
-	            case 4:
+	            case 3:
 	                this.state = 236;
-	                this.ifThenStatement();
+	                this.block();
 	                break;
 
 	            }
@@ -2188,8 +2188,8 @@ class LambdaExpressionContext extends antlr4.ParserRuleContext {
         this.ruleIndex = biesParser.RULE_lambdaExpression;
     }
 
-	block() {
-	    return this.getTypedRuleContext(BlockContext,0);
+	parameterList() {
+	    return this.getTypedRuleContext(ParameterListContext,0);
 	};
 
 	lambdaExpression() {
@@ -2200,12 +2200,12 @@ class LambdaExpressionContext extends antlr4.ParserRuleContext {
 	    return this.getTypedRuleContext(ExpressionContext,0);
 	};
 
-	parameterList() {
-	    return this.getTypedRuleContext(ParameterListContext,0);
-	};
-
 	ifThenStatement() {
 	    return this.getTypedRuleContext(IfThenStatementContext,0);
+	};
+
+	block() {
+	    return this.getTypedRuleContext(BlockContext,0);
 	};
 
 	accept(visitor) {
