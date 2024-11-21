@@ -80,7 +80,7 @@ elseStatement: ELSE block;
 
 // Modificación en `lambdaExpression` para soportar lambdas con y sin paréntesis en los parámetros
 lambdaExpression
-    : '(' parameterList? ')' '=>' (block | lambdaExpression | expression | ifThenStatement)  // Lambdas con paréntesis
+    : '(' parameterList? ')' '=>' (block | lambdaExpression | expression | ifThenStatement | letInDeclaration)  // Lambdas con paréntesis
     | parameterList '=>' (block | lambdaExpression | expression | ifThenStatement)           // Lambdas sin paréntesis
     ;
 
