@@ -507,10 +507,23 @@ class Loader extends biesGrammarVisitor {
         }if(ctx.list()){
             return this.visitArgumentList(ctx.list()).filter((item) => item !== undefined)
         }if(ctx.listAccess()){
-            return this.visitArgumentList(ctx.listAccess()).filter((item) => item !== undefined)
+            console.log(this.visit(ctx.listAccess()))
+            return this.visit(ctx.listAccess())
         }
         return null;
     }
+
+    visitListAccess(ctx) {
+        const identifier = ctx.ID().getText(); // Obtiene el nombre del identificador (a)
+        const index = this.visit(ctx.expression()); // Procesa la expresión del índice (2)
+        
+        return {
+            type: "ListAccess",
+            identifier: identifier,
+            index: index
+        };
+    }
+    
     
     visitStatement(ctx) {
         if (ctx.expressionStatement()) {
@@ -674,13 +687,11 @@ class Loader extends biesGrammarVisitor {
     */
     visitExpressionStatement(ctx) {
         const expression = this.visit(ctx.expression());
-        console.log(this.visit(ctx.expression()))
         const expressionDetails = {
             type: 'ExpressionStatement',
             expression,
             id: this.attributeId++
         };
-        //if(Array.isArray(this.visit(ctx.ctx.expression()))){}
 
         if (this.scopeStack.length === 0 && !this.processingIfThen) {
             this.addAttribute(expressionDetails);
