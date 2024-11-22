@@ -56,10 +56,13 @@ assignment: comparison ('=' comparison)?;  // Ajustada para permitir asignacione
 
 comparison: factor (('>' | '<' | '>=' | '<=' | '==' | '!=') factor)*;
 
+list: '[' (expression (',' expression)*)? ']';
+
 factor: INT 
       | FLOAT
       | ID 
       | STRING 
+      | list               // Permitimos que 'list' sea un factor válido
       | listAccess          
       | '(' expression ')' 
       | lambdaExpression    
@@ -67,7 +70,7 @@ factor: INT
       | printStatement       // Agrega printStatement como factor válido
       ;
 
-functionCall: ID '(' argumentList? ')';
+functionCall: ID '(' argumentList? ')' ('(' argumentList? ')')*; 
 argumentList: expression (',' expression)*;
 
 block: '{' (statement)* '}';

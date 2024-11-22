@@ -1,10 +1,4 @@
-let splash = (msg) => print(msg)
-let suma = (a, b) => a + b
-let resta = (a, b) => a - b
-let operar = (a, b, c) => a + b - c
-let version = 666 - 664
-splash("Testing helloworld Version " + version + "***")
-print("Hello World!")
-fun add(a, b){
-    return a + b
-}
+//const a = [1,2,"Hola",3,4]
+a[2]
+print(a[2])
+//print(a[ a[0] + 2 ])

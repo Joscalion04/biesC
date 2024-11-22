@@ -1,0 +1,13 @@
+let {
+    let splash = (msg) => print(msg);
+    let greetings = () => 
+    let {
+        let greet = input("Enter greeting>");
+    } in {
+        if (len(greet) == 0) then "Hello World!" else greet;
+    }
+    const version = 5 ** 5 / (4 + 1);
+} in {
+    splash("Testing helloworld Version " + version + " ***");
+    print(greetings());
+}

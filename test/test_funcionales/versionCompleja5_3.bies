@@ -1,0 +1,11 @@
+let {
+    let isPositive = (n) => 
+    let {
+        const result = if (n > 0) then "Positivo" else "Negativo"
+    } in {
+        print(result)
+    }
+} in {
+    let greet = input("Ingrese numero: ")
+    print(isPositive(number))
+}
