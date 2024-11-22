@@ -8,4 +8,4 @@ let {const a = [1, 2, 3, 4, 5]
 	print("*** Testing sumList("+ a + " ," + from + ", " + to + ") ***")
 	print(sumList(a, from, to, 0) )
 	print(sumListShort(a, to))
-}
+	}

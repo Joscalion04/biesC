@@ -172,7 +172,6 @@ class Loader extends biesGrammarVisitor {
      */
     processDeclaration(ctx, declarationType) {
         const name = ctx.ID().getText();
-
         // Guardamos el estado original de processingLambda
         const wasProcessingLambda = this.processingLambda;
         this.processingLambda = true;
@@ -181,7 +180,6 @@ class Loader extends biesGrammarVisitor {
 
         // Restauramos el estado de processingLambda
         this.processingLambda = wasProcessingLambda;
-
         const lambda = value.statements?.value;
 
         // Si el valor es una LambdaExpression, la procesamos
@@ -379,11 +377,9 @@ class Loader extends biesGrammarVisitor {
         if (assignments.length === 0) return null;
 
         let result = this.visit(assignments[0]);
-
         for (let i = 1; i < assignments.length; i++) {
             const operator = ctx.getChild(2 * i - 1).getText();
             const assignmentValue = this.visit(assignments[i]);
-            
                 const expressionDetails = {
                     type: 'BinaryExpression',
                     left: result,
@@ -508,6 +504,10 @@ class Loader extends biesGrammarVisitor {
         }
         if (ctx.printStatement()) {
             return this.visit(ctx.printStatement());
+        }if(ctx.list()){
+            return this.visitArgumentList(ctx.list()).filter((item) => item !== undefined)
+        }if(ctx.listAccess()){
+            return this.visitArgumentList(ctx.listAccess()).filter((item) => item !== undefined)
         }
         return null;
     }
@@ -566,7 +566,7 @@ class Loader extends biesGrammarVisitor {
         let args = [];
 
         if (ctx.argumentList()) {
-            args = ctx.argumentList().expression().map(expr => this.visit(expr));
+            args = ctx.argumentList().flatMap(expr => this.visit(expr));
         }
 
         const functionCallDetails = {
@@ -598,7 +598,7 @@ class Loader extends biesGrammarVisitor {
         const args = ctx.argumentList() 
             ? ctx.argumentList().expression().map(expr => this.visit(expr))
             : [];
-
+        console.log(args)
         const printDetails = {
             type: 'PrintStatement',
             args: args.flat(),
@@ -674,11 +674,13 @@ class Loader extends biesGrammarVisitor {
     */
     visitExpressionStatement(ctx) {
         const expression = this.visit(ctx.expression());
+        console.log(this.visit(ctx.expression()))
         const expressionDetails = {
             type: 'ExpressionStatement',
             expression,
             id: this.attributeId++
         };
+        //if(Array.isArray(this.visit(ctx.ctx.expression()))){}
 
         if (this.scopeStack.length === 0 && !this.processingIfThen) {
             this.addAttribute(expressionDetails);

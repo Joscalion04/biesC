@@ -1,7 +1,8 @@
 // Version compleja 5 let-in
  let {
     const splash = (msg) => print(msg);
-    const greetings = () => let {
+    const greetings = () => 
+        let {
             const greet = input("Enter greeting>")
         } in {
             if (len(greet) == 0 ) then "Hello World!" else greet
