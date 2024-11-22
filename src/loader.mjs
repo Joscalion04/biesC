@@ -186,7 +186,6 @@ class Loader extends biesGrammarVisitor {
 
         // Si el valor es una LambdaExpression, la procesamos
         if (lambda && lambda.type === 'LambdaExpression') {
-            console.log(lambda)
              return this.processLambda(name, lambda, value);
         } else {
             const details = {
@@ -337,7 +336,6 @@ class Loader extends biesGrammarVisitor {
         }else if(ctx.letInDeclaration()){
             body = this.visit(ctx.letInDeclaration());
         }
-        console.log(body)
         return {
             type: 'Block',
             statements: {
