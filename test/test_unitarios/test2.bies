@@ -1,6 +1,6 @@
  let {
 	const  foo = 1
- } in {
+ } in 
  	let { 
 		const x = 2
 	} in      
@@ -9,4 +9,3 @@
 			const goo (y) => foo+x+y+z       
         } in 
 			goo(3) 
- }

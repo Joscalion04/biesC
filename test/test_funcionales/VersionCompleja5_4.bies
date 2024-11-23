@@ -1,4 +1,3 @@
- Necesito una así:  
  let {
 	const  foo = 1
  } in 

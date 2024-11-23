@@ -508,7 +508,6 @@ class Loader extends biesGrammarVisitor {
         }if(ctx.list()){
             return this.visitArgumentList(ctx.list()).filter((item) => item !== undefined)
         }if(ctx.listAccess()){
-            console.log(this.visit(ctx.listAccess()))
             return this.visit(ctx.listAccess())
         }
         return null;
@@ -612,7 +611,7 @@ class Loader extends biesGrammarVisitor {
         const args = ctx.argumentList() 
             ? ctx.argumentList().expression().map(expr => this.visit(expr))
             : [];
-        console.log(args)
+
         const printDetails = {
             type: 'PrintStatement',
             args: args.flat(),
