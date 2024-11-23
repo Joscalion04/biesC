@@ -1,1 +1,12 @@
-const result = if (n > 0) then "Positivo" else "Negativo"
+ let {
+	const  foo = 1
+ } in {
+ 	let { 
+		const x = 2
+	} in      
+ 		in let {           
+			const z = 4          
+			const goo (y) => foo+x+y+z       
+        } in 
+			goo(3) 
+ }
