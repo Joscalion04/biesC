@@ -50,7 +50,8 @@ printStatement: PRINT '(' argumentList? ')' ';'? ;
 parameterList: ID (',' ID)*;
 
 expression: functionCall                         // Prioriza functionCall
-          | assignment (( '+' | '-' | '*' | '/' | '**' ) assignment)*;
+          | assignment (( '+' | '-' | '*' | '/' | '**' ) assignment)*
+          | ifThenStatement;
 
 assignment: comparison ('=' comparison)?;  // Ajustada para permitir asignaciones
 

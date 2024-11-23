@@ -1,5 +1,5 @@
 let {
-    let isPositive = (n) => 
+    const isPositive = (n) => 
     let {
         const result = if (n > 0) then "Positivo" else "Negativo"
     } in {

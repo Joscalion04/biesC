@@ -370,6 +370,9 @@ class Loader extends biesGrammarVisitor {
         if (ctx.functionCall()) {
             return this.visit(ctx.functionCall());
         }
+        if (ctx.ifThenStatement()) {
+            return this.visit(ctx.ifThenStatement());
+        }
 
         const assignments = ctx.assignment();
         if (assignments.length === 0) return null;

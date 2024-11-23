@@ -9,12 +9,11 @@ import fs from 'fs'; // Importar el módulo fs para trabajar con archivos
 * @author Josué Vindas Pérez
 * @author Joseph León Cabezas
 */
-// 5 no, 7 no, 8 no y 9 no pasersean
-// 1 , 2 , 3 , 4, 5, 6, 7, 8, 9 no traspilan
 
 // Ejecutar el parser con el archivo de prueba test1.bies
+parseBIESCode("./test/test_funcionales/versionCompleja5_3.bies");
 //parseBIESCode("./test/test_unitarios/test2.bies");
-traspilerBIESCode("./test/test_funcionales/versionCompleja5.bies");
+//traspilerBIESCode("./test/test_funcionales/versionCompleja5.bies");
 
 // Ejecutar el parser con el archivo pasado por parámetro desde el terminal con ayuda del commander
 export default function runParser(filePath) {
