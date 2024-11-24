@@ -50,9 +50,9 @@ class Transpiler {
                 this.bindings.unshift({fun: functionName, binding: []});
             }
 
-            console.log('='.repeat(100));
-            console.log('Función actual: ', functionName);
-            console.log('='.repeat(100));
+            // console.log('='.repeat(100));
+            // console.log('Función actual: ', functionName);
+            // console.log('='.repeat(100));
 
             const bindingIndex = this.getBindingIndexByName(functionName);
 
@@ -61,7 +61,16 @@ class Transpiler {
 
             this.instructions.push(`================ ${functionName} ====================`);
 
-            this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)}                ; ${functionName}`);
+            const functionDetails = this.functionAttributes[functionName];
+ 
+            const functionDeclaration = this.functionDeclarations.find(declaration => declaration.name === functionName);
+ 
+            const functionDeclarationArgs = functionDeclaration ? functionDeclaration.params.length : 0;
+ 
+            const parentFunction = functionDetails.parent ? `$${this.getFunctionClosure(functionDetails.parent)}` : `$0`;
+   
+            // Generar la instrucción FUN con el formato especificado
+            this.instructions.push(`$FUN $${this.getFunctionClosure(functionName)} args:${functionDeclarationArgs} parent:${parentFunction} ;${functionName}`);
 
             const attributes = this.functionAttributes[functionName].secuencia;
 
@@ -218,8 +227,9 @@ class Transpiler {
             case 'ElseIfStatement':
             case 'ElseStatement':
                 break;
-            default:
+            default:{
                 console.warn('Tipo de atributo desconocido:', attribute.type);
+            }
         }
     }
 
@@ -874,8 +884,8 @@ class Transpiler {
             const processOperand = (operand, nodeName) => this.transpileExpression(operand, nodeName);
 
             // Procesa ambos operandos
-            const left = processOperand(node.left, node.name || '');
             const right = processOperand(node.right, node.name || '');
+            const left = processOperand(node.left, node.name || '');
 
             // Determina si los operandos incluyen cadenas y aplica el operador correspondiente
             const isStringOperand = typeof node.left === 'string' || typeof node.right === 'string';
