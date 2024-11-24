@@ -1,5 +1,5 @@
 // Version Extra compleja 7 Maximo entre dos números, lambda anidada
- let max = x => y => if (x > y) then x else y
+ let max = x => y => {if (x > y) then x else y}
  let {
     const x = 10
     const y = 20

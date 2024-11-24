@@ -50,9 +50,9 @@ class Transpiler {
                 this.bindings.unshift({fun: functionName, binding: []});
             }
 
-            // console.log('='.repeat(100));
-            // console.log('Función actual: ', functionName);
-            // console.log('='.repeat(100));
+            console.log('='.repeat(100));
+            console.log('Función actual: ', functionName);
+            console.log('='.repeat(100));
 
             const bindingIndex = this.getBindingIndexByName(functionName);
 
@@ -105,7 +105,7 @@ class Transpiler {
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type, startFunctionName) {
 
-        // console.log('Atributo actual: ', attribute);
+        console.log('Atributo actual: ', attribute);
 
         if (this.attributesSet.has(attribute.id)) {
             return;
@@ -142,8 +142,11 @@ class Transpiler {
                 if (this.attributesSet.has(attribute.id)) {
                     return;
                 }
-                this.attributesSet.add(attribute.condition.id);
-                this.transpileIfThenStatement(attribute, startFunctionName);
+                const foud = this.isAttributeInFutureBlocks(attribute, index, startFunctionName);
+                if (!foud) {
+                    this.attributesSet.add(attribute.condition.id);
+                    this.transpileIfThenStatement(attribute, startFunctionName);
+                }
             } break;
             case 'Block': {
                 const found = this.isAttributeInFutureBlocks(attribute, index, startFunctionName);
@@ -164,7 +167,6 @@ class Transpiler {
                         if (!this.attributesSet.has(attribute.id)) {
                             const isLastAttribute = attributes[j + 1] === undefined;
                             if (attribute.id !== currentAttribute.id || isLastAttribute) {
-                                this.attributesSet.add(attribute.id);
                                 this.transpileBlock(attribute, index, startFunctionName);
                             }
                         }
@@ -172,7 +174,6 @@ class Transpiler {
                 
                     // Verificar una última vez si el atributo ya fue procesado
                     if (!this.attributesSet.has(attribute.id)) {
-                        this.attributesSet.add(attribute.id);
                         this.transpileBlock(attribute, index, startFunctionName);
                     }
                 }                
@@ -233,17 +234,17 @@ class Transpiler {
         }
     }
 
-    handleExpressionStatement(node, attributes, index, type, startFunctionName) {  
+    handleExpressionStatement(node, attributes, index, type, startFunctionName) {
         if (this.attributesSet.has(node.id)) {
             return;
         }
-
-        if (typeof node.expression === 'object') {
-            this.attributesSet.add(node.id);
-            this.processAttribute(node.expression, attributes, index, 'expression', startFunctionName);
-        } else if (type === 'BlockThen') {
-            this.attributesSet.add(node.id);
-            this.loadValue(node.expression, node.expression);
+        const found = this.isAttributeInFutureBlocks(node, index, startFunctionName);
+        if (!found) {
+            if (typeof node.expression === 'object') {
+                this.processAttribute(node.expression, attributes, index, 'expression', startFunctionName);
+            } else if (type === 'BlockThen') {
+                this.loadValue(node.expression, node.expression);
+            }
         }
     }
 
@@ -318,6 +319,7 @@ class Transpiler {
         if (type === 'function' || type === 'value') {
             // Verificar si el atributo ya está presente en bloques posteriores
             const found = this.isAttributeInFutureBlocks(attribute, index, startFunctionName);
+            
             // Transpilar solo si no fue encontrado
             if (!found) {
                 this.attributesSet.add(attribute.id);
@@ -332,6 +334,9 @@ class Transpiler {
 
     // Método auxiliar: verifica si un atributo está en futuros bloques
     isAttributeInFutureBlocks(currentAttribute, startIndex, startFunctionName) {
+
+        // console.log('Atributo actual: ', currentAttribute.args);
+        // console.log('\n\n\n', this.bindings[0].binding, '\n\n\n');
 
         let start = startIndex;
         let continuar = false;
@@ -447,6 +452,10 @@ class Transpiler {
                                             }
                                         }
                                     }
+                                    
+                                    if(futureAttribute.id === currentAttribute.id) {
+                                        return true;
+                                    }
                                 } else if (futureAttribute.type === 'LambdaExpression'){
                                     // Verificar si el atributo está dentro del cuerpo de la función lambda
                                     if (futureAttribute.body.id === currentAttribute.id) {
@@ -456,17 +465,25 @@ class Transpiler {
                                     if (futureAttribute.body.id === currentAttribute.id) {
                                         return true; // Atributo encontrado
                                     }
+                                } else if (futureAttribute.type === 'ExpressionStatement') {
+                                    if (futureAttribute.expression.id === currentAttribute.id) {
+                                        return true; // Atributo encontrado
+                                    }
                                 }
                             }
                         }
+                        // console.log('Atributo no encontrado: ', currentAttribute);
                         return false;
                     }
                 }
             }
-
+            
             for (let j = start; j < attributes.length; j++) {
                 const futureAttribute = attributes[j];
-
+                
+                if (!futureAttribute) {
+                    return false;
+                }
                 // Validar si es un bloque
                 if (futureAttribute.type === 'Block') {
                     // Verificar si el atributo está dentro de las declaraciones del bloque
@@ -540,6 +557,10 @@ class Transpiler {
                             }
                         }
                     }
+                                    
+                    if(futureAttribute.id === currentAttribute.id) {
+                        return true;
+                    }
                 } else if (futureAttribute.type === 'LambdaExpression'){
                     // Verificar si el atributo está dentro del cuerpo de la función lambda
                     if (futureAttribute.body.id === currentAttribute.id) {
@@ -551,17 +572,24 @@ class Transpiler {
                         // Atributo encontrado
                         return true; // Atributo encontrado
                     }
+                } else if (futureAttribute.type === 'ExpressionStatement') {
+                    if (futureAttribute.expression.id === currentAttribute.id) {
+                        return true; // Atributo encontrado
+                    }
                 }
             }
         }
+        // console.log('Atributo no encontrado: ', currentAttribute);
          // Atributo no encontrado
         return false; // Atributo no encontrado
     }
 
     transpileReturnStatement(node, index, startFunctionName) {
         this.transpileValue(node.value, index, startFunctionName);
-        this.instructions.push('RET');
-        this.incrementActualIfIndex();
+        if (this.instructions[this.instructions.length - 1] !== 'RET') {
+            this.instructions.push('RET');
+            this.incrementActualIfIndex();
+        }
     }
 
     transpileIfThenStatement(node, startFunctionName) {
@@ -580,11 +608,10 @@ class Transpiler {
         let i = 1;
         this.exitCounter.forEach((exit) => {
             this.instructions.splice(this.instructions.length - (exit - 1), 0, `BR ${exit + (this.exitCounter.length - i++)}`);
+            this.incrementActualIfIndex();
         });
         this.exitCounter = [];
 
-        this.instructions.push('RET');
-        this.incrementActualIfIndex();
     }
 
     
@@ -651,28 +678,10 @@ class Transpiler {
         this.instructions.splice(
             indexToInsert + 1,
             0,
-            `BF ${this.ifIndexes.pop()}              ; ${label}(${conditionText})`
+            `BF ${this.ifIndexes.pop() + 1}              ; ${label}(${conditionText})`
         );
         this.incrementActualIfIndex();
     }    
-
-    // addBranchThen(condition, body, label) {
-    //     this.ifIndexes.push(1);
-    //     this.instructionIndexes.push(this.instructions.length);
-    
-    //     if (body) {
-    //         this.transpileBlock(body);
-    //     }
-    
-    //     const indexToInsert = this.instructionIndexes.pop() - 1;
-    //     const conditionText = condition ? `${condition.left} ${condition.operator} ${condition.right}` : "";
-    //     this.instructions.splice(
-    //         indexToInsert + 1,
-    //         0,
-    //         `BF ${this.ifIndexes.pop()}              ; ${label}(${conditionText})`
-    //     );
-    //     this.incrementActualIfIndex();
-    // }
 
     incrementActualIfIndex() {
         this.exitCounter.forEach((value, index) => {
@@ -705,15 +714,17 @@ class Transpiler {
             // Manejar valores literales (números y cadenas)
             if (typeof value === 'number' || typeof value === 'string') {
                 this.loadLiteral(value);
-                
+
                 if (type === 'declaration') {
                     this.addBinding(name, value);
                     bindingIndex = this.getBindingIndex(name);
                     this.bindToIndex(bindingIndex, name || value);
                 }
+
             }
             // Para valores complejos (funciones, expresiones binarias, etc.)
             else if (typeof value === 'object') {
+                
                 this.handleComplexValue(value, name, type);
             }
         } else {
@@ -747,6 +758,11 @@ class Transpiler {
             this.transpileFunctionCall(value, name);
         } else if (value.type === 'BinaryExpression') {
             this.transpileExpression(value, name, type);
+        } else if (value.type === 'IfThenStatement') {
+            this.transpileIfThenStatement(value, name);
+            this.addBinding(name, value);
+            const bindingIndex = this.getBindingIndex(name);
+            this.bindToIndex(bindingIndex, name || value);
         } else {
             this.instructions.push(`LDF $${this.getFunctionClosure(value.functionName)}`);
             this.incrementActualIfIndex();
@@ -835,7 +851,6 @@ class Transpiler {
     }
     
     transpileComparisionExpression(node) {
-        console.log('ComparisionExpression: ', node);
         this.loadValue(node.right, node.name ? node.name : '');
         this.loadValue(node.left, node.name ? node.name : '');
         this.loadComparisionOperator(node.operator);
@@ -851,6 +866,7 @@ class Transpiler {
     * - `value`: El valor que se va a cargar.
     */
     transpileValueDeclaration(node, index, startFunctionName) {
+        
         if (node.value ? node.value.type === 'LambdaExpression' : false) {
             // Manejo especial para LambdaExpression
             //this.instructions.push(`LDF $${node.id}`); // Cargar la función lambda
@@ -939,22 +955,24 @@ class Transpiler {
     * @param {Object} node El nodo que representa la llamada a la función.
     */
     transpileFunctionCall(node, name) {
-
+        
         node.args.forEach(arg => {
-            if (arg.type === 'BinaryExpression') {
-                // Procesa los operandos de la expresión binaria
-                this.loadValue(arg.right, arg.name ? arg.name : '');
-                this.loadValue(arg.left, arg.name ? arg.name : '');
-    
-                if ((typeof arg.right === 'string' || typeof arg.left === 'string') && arg.operator === '+') {
-                    this.instructions.push('CAT');
-                    this.incrementActualIfIndex();
+            if(arg) {
+                if (arg.type === 'BinaryExpression') {
+                    // Procesa los operandos de la expresión binaria
+                    this.loadValue(arg.right, arg.name ? arg.name : '');
+                    this.loadValue(arg.left, arg.name ? arg.name : '');
+        
+                    if ((typeof arg.right === 'string' || typeof arg.left === 'string') && arg.operator === '+') {
+                        this.instructions.push('CAT');
+                        this.incrementActualIfIndex();
+                    } else {
+                        this.loadBinaryOperator(arg.operator);
+                    }
                 } else {
-                    this.loadBinaryOperator(arg.operator);
+                    // Carga el valor directamente si no es una expresión binaria
+                    this.loadValue(arg, arg.name ? arg.name : '');
                 }
-            } else {
-                // Carga el valor directamente si no es una expresión binaria
-                this.loadValue(arg, arg.name ? arg.name : '');
             }
         });
 
@@ -985,9 +1003,27 @@ class Transpiler {
         // Obtiene la declaración de la función y sus parámetros
         const functionDeclaration = this.functionDeclarations.find(declaration => declaration.name === node.functionName);
         const functionDeclarationArgs = functionDeclaration.params;
-    
+
+        if (functionDeclarationArgs.length !== node.args.length) {
+            // Verifica si faltan parámetros
+            const missingParams = node.args.slice(functionDeclarationArgs.length);
+            missingParams.forEach(param => {
+                functionDeclarationArgs.push(param);
+            });
+        }
+
         // Los bindings de la nueva función se llevan los bindings de la función actual según la cantidad de args,
         // pero con los nombres de los args.
+        // console.log('Function declaration args: ', functionDeclarationArgs);
+        // console.log('BINDINGS: ', this.bindings[0].binding);
+        // console.log('BINDINGS: ', this.bindings[0].binding.slice(0, node.args.length).map((binding, index) => {
+        //     // Asocia el nombre de los parámetros de la función con los valores de los argumentos
+        //     return {
+        //         name: functionDeclarationArgs[index],  // Nombre del argumento de la función
+        //         value: binding.value   // Conserva el valor del binding actual
+        //     };
+        // }));
+
         this.bindings.push({
             fun: node.functionName,
             binding: this.bindings[0].binding.slice(0, node.args.length).map((binding, index) => {
@@ -998,6 +1034,8 @@ class Transpiler {
                 };
             })
         });
+        console.log('BINDINGS: ', this.bindings[0].binding);
+
     }
     
 

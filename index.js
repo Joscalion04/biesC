@@ -11,7 +11,7 @@ import fs from 'fs'; // Importar el módulo fs para trabajar con archivos
 */
 
 // Ejecutar el parser con el archivo de prueba test1.bies
-traspilerBIESCode("./test/test_funcionales/versionCompleja4.bies");
+parseBIESCode("./test/test_funcionales/versionCompleja5_4.bies");
 //parseBIESCode("./test/test_unitarios/test2.bies");
 //traspilerBIESCode("./test/test_funcionales/versionCompleja5.bies");
 
