@@ -1,4 +1,4 @@
-// Generated from grammar/bies.g4 by ANTLR 4.13.1
+// Generated from grammar/bies.g4/ by ANTLR 4.13.1
 // jshint ignore: start
 import antlr4 from 'antlr4';
 
@@ -32,6 +32,12 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 
 	// Visit a parse tree produced by biesParser#letInDeclaration.
 	visitLetInDeclaration(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by biesParser#inLetDeclaration.
+	visitInLetDeclaration(ctx) {
 	  return this.visitChildren(ctx);
 	}
 
@@ -152,12 +158,6 @@ export default class biesVisitor extends antlr4.tree.ParseTreeVisitor {
 
 	// Visit a parse tree produced by biesParser#blockThen.
 	visitBlockThen(ctx) {
-	  return this.visitChildren(ctx);
-	}
-
-
-	// Visit a parse tree produced by biesParser#inLetDeclaration.
-	visitInLetDeclaration(ctx) {
 	  return this.visitChildren(ctx);
 	}
 

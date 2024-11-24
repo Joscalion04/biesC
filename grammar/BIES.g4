@@ -24,7 +24,8 @@ WS: [ \t\r\n]+ -> skip;
 program: (statement)* EOF;
 
 statement: functionDeclaration  
-         | letInDeclaration    
+         | letInDeclaration 
+         | inLetDeclaration   
          | letDeclaration 
          | constDeclaration 
          | printStatement       
@@ -40,7 +41,11 @@ letDeclaration: 'let' ID '=' expression ';'? ;
 constDeclaration: 'const' ID '=' expression ';'? ;
 
 // let-in Declaration
-letInDeclaration: 'let' '{' (constDeclaration | letDeclaration | letInDeclaration)* '}' 'in' block ';'? ;
+letInDeclaration
+    : 'let' '{'? (constDeclaration | letDeclaration | letInDeclaration )* '}'? 'in' block ';'?;
+
+inLetDeclaration: 'in let' '{'? (constDeclaration | letDeclaration | letInDeclaration)* '}'? 'in' block ';'?;
+
 functionDeclaration: 'fun' ID '(' parameterList? ')' block;
 returnStatement: 'return' expression? ';'? ;
 expressionStatement: expression ';'? ;
