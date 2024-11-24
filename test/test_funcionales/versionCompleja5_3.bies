@@ -6,6 +6,6 @@ let {
         print(result)
     }
 } in {
-    let greet = input("Ingrese numero: ")
+    let number = input("Ingrese numero: ")
     print(isPositive(number))
 }
