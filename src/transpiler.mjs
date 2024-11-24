@@ -225,6 +225,9 @@ class Transpiler {
             case 'BlockThen': {
                 this.transpileBlock(attribute, index, startFunctionName);
             } break;
+            // case 'ListAccess': {
+            //     const bindingIndex = this.getBindingIndex(attribute.identifier);
+            // }
             case 'ElseIfStatement':
             case 'ElseStatement':
                 break;
@@ -335,7 +338,7 @@ class Transpiler {
     // Método auxiliar: verifica si un atributo está en futuros bloques
     isAttributeInFutureBlocks(currentAttribute, startIndex, startFunctionName) {
 
-        // console.log('Atributo actual: ', currentAttribute.args);
+        // console.log('Buscando Atributo actual: ', currentAttribute);
         // console.log('\n\n\n', this.bindings[0].binding, '\n\n\n');
 
         let start = startIndex;
@@ -358,7 +361,7 @@ class Transpiler {
             // Verificar si el atributo está en la misma función
             if (functionName === this.actualFunction) {
                 // Verificar hay mas de un atributo
-                if (attributes.length > 1) {
+                // if (attributes.length > 1) {
                     // Verificar si el atributo está en la última posición
                     if (start === attributes.length - 1) {
                         
@@ -475,15 +478,19 @@ class Transpiler {
                         // console.log('Atributo no encontrado: ', currentAttribute);
                         return false;
                     }
-                }
+                // }
             }
-            
+
             for (let j = start; j < attributes.length; j++) {
                 const futureAttribute = attributes[j];
                 
                 if (!futureAttribute) {
                     return false;
                 }
+            
+                // console.log('Buscando Atributo futuro: ', futureAttribute);
+            
+
                 // Validar si es un bloque
                 if (futureAttribute.type === 'Block') {
                     // Verificar si el atributo está dentro de las declaraciones del bloque
@@ -707,12 +714,13 @@ class Transpiler {
     *                                      o un objeto con una propiedad `functionName`.
     */
     loadValue(value, name, type) {
-        let bindingIndex = this.getBindingIndex(name || value);
+        
+        let bindingIndex = this.getBindingIndex(name || value.identifier || value);
     
         // Si el binding no existe, cargamos el valor y lo asociamos si es necesario
         if (bindingIndex[0] === -1) {
             // Manejar valores literales (números y cadenas)
-            if (typeof value === 'number' || typeof value === 'string') {
+            if (typeof value === 'number' || typeof value === 'string' || Array.isArray(value)) {
                 this.loadLiteral(value);
 
                 if (type === 'declaration') {
@@ -724,20 +732,27 @@ class Transpiler {
             }
             // Para valores complejos (funciones, expresiones binarias, etc.)
             else if (typeof value === 'object') {
-                
                 this.handleComplexValue(value, name, type);
             }
         } else {
             // Si el binding ya existe, cargamos desde el índice
             this.instructions.push(`BLD ${bindingIndex[0]} ${bindingIndex[1]}                              ;${name || value}`);  // Asociación de binding
             this.incrementActualIfIndex();
+
+            if (value.type === 'ListAccess') {
+                this.loadValue(value.index, value.index);
+            }
         }
     }
     
     // Función auxiliar para cargar valores literales
     loadLiteral(value) {
-        const formattedValue = typeof value === 'string' ? `"${value}"` : value;
-        this.instructions.push(`LDV ${formattedValue}`);
+        if (Array.isArray(value)) {
+            this.instructions.push(`LDV [${value.join(', ')}]`);
+        } else {
+            const formattedValue = typeof value === 'string' ? `"${value}"` : value;
+            this.instructions.push(`LDV ${formattedValue}`);
+        }
         this.incrementActualIfIndex();
     }
     
@@ -935,11 +950,14 @@ class Transpiler {
             // Si es una variable, carga su valor
             this.instructions.push(`LDV ${node.name}`);
             this.incrementActualIfIndex();
-        } else if (typeof node === 'number' || typeof node === 'string') {
+        } else if (node.type === 'ListAccess') {
+            this.loadValue(node.index, '');
+            this.instructions.push(`LRK`);
+        }  else if (typeof node === 'number' || typeof node === 'string') {
             // Si es un valor literal, simplemente carga el valor
             this.loadValue(node, name);
             return node;
-        } else {
+        }else {
             throw new Error(`Tipo de nodo desconocido o no soportado: ${JSON.stringify(node)}`);
         }
     }
