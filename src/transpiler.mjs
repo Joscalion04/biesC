@@ -74,7 +74,7 @@ class Transpiler {
 
             const attributes = this.functionAttributes[functionName].secuencia;
 
-            console.log('Atributos de la función: ', attributes);
+            // console.log('Atributos de la función: ', attributes, '\n\n\n\n', '='.repeat(150));
 
             // Recorrer los atributos de la función
             attributes.forEach((attribute, index) => this.processAttribute(attribute, attributes, index, 'function', functionName));
@@ -107,6 +107,8 @@ class Transpiler {
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type, startFunctionName) {
 
+        // console.log('Atributo actual: ', attribute);
+
         if (this.attributesSet.has(attribute.id)) {
             return;
         }
@@ -114,7 +116,7 @@ class Transpiler {
         switch (attribute.type) {
             case 'LetDeclaration':
             case 'ConstDeclaration': {
-                this.handleDeclaration(attribute, attributes, index, type, startFunctionName);
+                this.handleDeclaration(attribute, attributes, index + 1, type, startFunctionName);
 
             } break;
             case 'ComparisionExpression': {
@@ -924,16 +926,60 @@ class Transpiler {
     * @param {Object} node El nodo que representa la expresión.
     */
     transpileExpression(node, name, type) {
-        
+        console.log('Node: ', node);
         if (node.type === 'BinaryExpression') {
             const processOperand = (operand, nodeName) => this.transpileExpression(operand, nodeName);
 
             // Procesa ambos operandos
-            const right = processOperand(node.right, node.name || '');
-            const left = processOperand(node.left, node.name || '');
+            let right = processOperand(node.right, node.name || '');
+            let left = processOperand(node.left, node.name || '');
+
+            console.log('Left: ', left);
+            console.log('Right: ', right);
+
+            let bindingIndex = this.getBindingIndex(node.right);
+            if (bindingIndex[0] !== -1) {
+                const rightValue = this.bindings[bindingIndex[0]].binding[bindingIndex[1]].value;
+                if (rightValue !== undefined) {
+                    right = rightValue;
+                }
+            }
+
+            bindingIndex = this.getBindingIndex(node.left);
+            if (bindingIndex[0] !== -1) {
+                const leftValue = this.bindings[bindingIndex[0]].binding[bindingIndex[1]].value;
+                if (leftValue !== undefined) {
+                    left = leftValue;
+                }
+            }
+
+            if (left === undefined && typeof node.left === 'object') {
+                if ((typeof node.left.left === 'string' || typeof node.left.right === 'string') &&
+                    this.getBindingIndex(node.left.left)[0] === -1 && this.getBindingIndex(node.left.right)[0] === -1
+                ) {
+                    left = 'X';
+                } else {
+                    left = 0;
+                }
+            }
+
+            if (right === undefined && typeof node.right === 'object') {
+                if ((typeof node.right.left === 'string' || typeof node.right.right === 'string') &&
+                    this.getBindingIndex(node.right.left)[0] === -1 && this.getBindingIndex(node.right.right)[0] === -1
+                ) {
+                    right = 'X';
+                } else {
+                    right = 0;
+                }
+            }
+
+            console.log('Left: ', left);
+            console.log('Right: ', right);
+            console.log('Node left: ', node.left);
+            console.log('Node right: ', node.right);
 
             // Determina si los operandos incluyen cadenas y aplica el operador correspondiente
-            const isStringOperand = typeof node.left === 'string' || typeof node.right === 'string';
+            const isStringOperand = typeof left === 'string' || typeof right === 'string';
             if (isStringOperand && node.operator === '+') {
                 this.instructions.push('CAT'); // Concatenación para cadenas
                 this.incrementActualIfIndex();
