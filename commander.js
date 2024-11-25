@@ -58,7 +58,7 @@ console.log(`Nivel de trace: ${traceLevel}`);
 try {
     console.log('Ejecutando el parser...');
     const result = runParser(sourceFile);
-    console.log('Resultado del parser:', result);
+    //console.log('Resultado del parser:', result);
 
     if (result === undefined) {
         throw new Error("El parser no devolvió ningún resultado.");
