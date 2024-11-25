@@ -989,8 +989,6 @@ class Transpiler {
     * @param {Object} node El nodo que representa la llamada a la función.
     */
     transpileFunctionCall(node, name) {
-
-        const params = this.functionDeclarations.find(declaration => declaration.name === node.functionName).params;
         
         node.args.forEach((arg, index) => {
             if(arg || arg === 0) {
@@ -1020,6 +1018,9 @@ class Transpiler {
                     
                 } else {
                     if (typeof arg === 'number') {
+
+                        const params = this.functionDeclarations.find(declaration => declaration.name === node.functionName).params;
+                        
                         this.loadLiteral(arg);
 
                         this.addBinding(params[index], arg);
