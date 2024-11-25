@@ -708,9 +708,9 @@ class Transpiler {
     *                                      o un objeto con una propiedad `functionName`.
     */
     loadValue(value, name, type) {
-        console.log('Valor a cargar: ', value);
+        
         let bindingIndex = this.getBindingIndex(name || value.identifier || value);
-        console.log('Índice de binding: ', bindingIndex);
+        
         // Si el binding no existe, cargamos el valor y lo asociamos si es necesario
         if (bindingIndex[0] === -1) {
             
@@ -964,6 +964,8 @@ class Transpiler {
             this.incrementActualIfIndex();
             if (typeof node.index === 'object') {
                 this.loadValue(node.index, '');
+            } else {
+                this.loadLiteral(node.index);
             }
 
             this.instructions.push(`LTK`);
@@ -1020,7 +1022,7 @@ class Transpiler {
                     if (typeof arg === 'number') {
 
                         const params = this.functionDeclarations.find(declaration => declaration.name === node.functionName).params;
-                        
+
                         this.loadLiteral(arg);
 
                         this.addBinding(params[index], arg);
