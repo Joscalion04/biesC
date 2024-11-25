@@ -74,6 +74,8 @@ class Transpiler {
 
             const attributes = this.functionAttributes[functionName].secuencia;
 
+            console.log('Atributos de la función: ', attributes);
+
             // Recorrer los atributos de la función
             attributes.forEach((attribute, index) => this.processAttribute(attribute, attributes, index, 'function', functionName));
 
@@ -105,11 +107,10 @@ class Transpiler {
     // Procesar un atributo
     processAttribute(attribute, attributes, index, type, startFunctionName) {
 
-        // console.log('Atributo actual: ', attribute);
-
         if (this.attributesSet.has(attribute.id)) {
             return;
         }
+
         switch (attribute.type) {
             case 'LetDeclaration':
             case 'ConstDeclaration': {
@@ -191,7 +192,8 @@ class Transpiler {
             } break;
             case 'FunctionCall': {
                 if (type === 'value' || type === 'expression') {
-                    const found = this.isAttributeInFutureBlocks(attribute, index, startFunctionName);
+                    const found = this.isAttributeInFutureBlocks(attribute, index + 1, startFunctionName);
+                    
                     if (!found) {
                         this.transpileFunctionCall(attribute);
                     }
@@ -337,6 +339,10 @@ class Transpiler {
 
     // Método auxiliar: verifica si un atributo está en futuros bloques
     isAttributeInFutureBlocks(currentAttribute, startIndex, startFunctionName) {
+        // console.log('\n\n\n\n', '='.repeat(100));
+        // console.log('Atributo actual: ', currentAttribute);
+        // console.log('Indice actual: ', startIndex);
+        // console.log('Nombre de la función de inicio: ', startFunctionName);
 
         let start = startIndex;
         let continuar = false;
@@ -479,6 +485,7 @@ class Transpiler {
 
             for (let j = start; j < attributes.length; j++) {
                 const futureAttribute = attributes[j];
+                // console.log('Atributo futuro: ', futureAttribute);
                 
                 if (!futureAttribute) {
                     return false;
@@ -1010,12 +1017,21 @@ class Transpiler {
                     
                     const isStringOperation = (typeof arg.right === 'string' || typeof arg.left === 'string') && arg.operator === '+';
                     const isStringValue = (typeof rightValue === 'string' || typeof leftValue === 'string');
-                    
-                    if (isStringOperation && isStringValue) {
-                        this.instructions.push('CAT');
-                        this.incrementActualIfIndex();
+
+                    if (rightValue === undefined && leftValue === undefined) {
+                        if (isStringOperation) {
+                            this.instructions.push('CAT');
+                            this.incrementActualIfIndex();
+                        } else {
+                            this.loadBinaryOperator(arg.operator);
+                        }
                     } else {
-                        this.loadBinaryOperator(arg.operator);
+                        if (isStringOperation && isStringValue) {
+                            this.instructions.push('CAT');
+                            this.incrementActualIfIndex();
+                        } else {
+                            this.loadBinaryOperator(arg.operator);
+                        }
                     }
                     
                 } else {

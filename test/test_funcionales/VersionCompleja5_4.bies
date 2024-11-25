@@ -4,4 +4,4 @@ in let{
 	const z = 4;
 	const goo = (y) => foo+x+y+z
 	}in
-		goo(3)
+		print(goo(3))
