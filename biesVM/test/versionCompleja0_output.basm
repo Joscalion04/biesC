@@ -1,16 +1,73 @@
-Atributos procesados por Loader:
-Archivo fuente: ./test/test_funcionales/versionCompleja0.bies
-Archivo de salida (sysout): outputsParser\versionCompleja0_output.basm
-Archivo de errores (syserr): outputsParser\versionCompleja0_errors.basm
-Nivel de trace: 0
-Ejecutando el parser...
-Atributos procesados por Loader:
-Resultado del parser: [
-  {
-    type: 'PrintStatement',
-    args: [ 'Testing helloworld Version 0 ***' ],
-    id: 0
-  },
-  { type: 'PrintStatement', args: [ 'Hello World!' ], id: 1 }
-]
-Ejecución completada con éxito. Salida en: outputsParser\versionCompleja0_output.basm
+;================ main ====================
+  $FUN $0 args:0 parent:$0 ;main
+  LDV [1, 2, 3, 4, 5]
+  BST 0 0                              ;a
+  LDV 0
+  BST 0 1                              ;from
+  LDV 3
+  BST 0 2                              ;to
+  LDV ") *"
+  BLD 0 2                              ;to
+  LDV ", "
+  BLD 0 1                              ;from
+  LDV ", "
+  BLD 0 0                              ;a
+  LDV "* Testing sumList("
+  CAT
+  CAT
+  CAT
+  CAT
+  CAT
+  CAT
+  PRN
+  BLD 0 0                              ;a
+  BLD 0 1                              ;from
+  BLD 0 2                              ;to
+  LDV 0
+  LDF $1
+  APP 4                ; sumList(a, from, to, 0)
+  PRN
+  BLD 0 0                              ;a
+  BLD 0 2                              ;to
+  LDF $2
+  APP 2                ; sumListShort(a to)
+  PRN
+  HLT
+  $END
+  ;================ sumList ====================
+  $FUN $1 args:4 parent:$0 ;sumList
+  BLD 0 2                              ;to
+  BLD 0 1                              ;from
+  EQ
+  BF 3              ; if(from == to)
+  BLD 0 3                              ;s
+  BR 12
+  
+  BLD 0 0                              ;a
+
+  LDV 1
+  BLD 0 1                              ;from
+  ADD
+
+  BLD 0 2                              ;to
+
+  BLD 0 3                              ;s
+  BLD 0 0                              ;a
+  BLD 0 1                              ;from
+  LTK
+  ADD
+
+  LDF $1
+  APP 4                ; sumList(a [object Object] to [object Object])
+  RET
+  $END
+  ;================ sumListShort ====================
+  $FUN $2 args:2 parent:$0 ;sumListShort
+  BLD 0 0                              ;a
+  LDV 0
+  BLD 0 1                              ;n
+  LDV 0
+  LDF $1
+  APP 4                ; sumList(a 0 n 0)
+  RET
+  $END
