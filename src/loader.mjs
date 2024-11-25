@@ -90,7 +90,6 @@ class Loader extends biesGrammarVisitor {
         for (const constDecl of constDeclarations) {
             const constDetails = this.visit(constDecl);
             letInDetails.declarations.push(constDetails);
-            console.log(constDetails)
             
             // Guardamos la constante en el contexto actual
             this.setVariable(constDetails.id, constDetails.value);
@@ -521,7 +520,8 @@ class Loader extends biesGrammarVisitor {
         return {
             type: "ListAccess",
             identifier: identifier,
-            index: index
+            index: index,
+            id: this.attributeId++
         };
     }
     
@@ -556,7 +556,6 @@ class Loader extends biesGrammarVisitor {
             return this.visit(ctx.letInDeclaration());
         }
         if (ctx.inLetDeclaration()) {
-            //console.log("ACA")
             return this.visit(ctx.inLetDeclaration());
         }
         if (ctx.block()) {
