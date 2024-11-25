@@ -1,0 +1,14 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDF $1
+APP  0                ; splash()
+LDV "Hello World!"
+PRN
+HLT
+$END
+;================ splash ====================
+$FUN $1 args:0 parent:$0 ;splash
+LDV "Testing helloworld Version 1 ***"
+PRN
+RET
+$END

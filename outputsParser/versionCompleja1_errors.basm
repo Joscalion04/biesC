@@ -1,0 +1,3 @@
+line 2:3 extraneous input 'let' expecting '{'
+line 3:0 extraneous input 'in' expecting 'let'
+line 7:2 mismatched input 'print' expecting 'let'

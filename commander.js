@@ -63,8 +63,8 @@ try {
     if (result === undefined) {
         throw new Error("El parser no devolvió ningún resultado.");
     }
-
-    const resultString = result.map(line => JSON.stringify(line, null, 2)).join('\n');
+    const resultString = result.join('\n');
+    console.log(resultString)
     fs.writeFileSync(outFile, resultString);
     console.log(`Ejecución completada con éxito. Salida en: ${outFile}`);
 } catch (error) {

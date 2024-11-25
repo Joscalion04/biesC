@@ -62,9 +62,9 @@ Instrucciones:  [
   '$END'
 ]
 undefined
-Archivo fuente: ./test/test_funcionales/versionCompleja1.bies
-Archivo de salida (sysout): outputsParser\versionCompleja1_output.basm
-Archivo de errores (syserr): outputsParser\versionCompleja1_errors.basm
+Archivo fuente: ./test/test_funcionales/versionCompleja8.bies
+Archivo de salida (sysout): outputsParser\versionCompleja8_output.basm
+Archivo de errores (syserr): outputsParser\versionCompleja8_errors.basm
 Nivel de trace: 0
 Ejecutando el parser...
 Atributos procesados por Loader:
@@ -72,66 +72,73 @@ Función: main
 ID: 0
 Secuencia: [
   {
-    "type": "FunctionDeclaration",
-    "name": "splash",
-    "params": [],
-    "body": {
-      "type": "PrintStatement",
-      "args": [
-        "Testing helloworld Version 1 ***"
-      ],
-      "id": 0
-    },
-    "id": 4
-  },
-  {
-    "type": "FunctionCall",
-    "functionName": "splash",
-    "args": [],
-    "id": 5
-  },
-  {
-    "type": "ExpressionStatement",
-    "expression": {
-      "type": "FunctionCall",
-      "functionName": "splash",
-      "args": [],
-      "id": 5
-    },
-    "id": 6
-  },
-  {
-    "type": "PrintStatement",
-    "args": [
-      "Hello World!"
+    "type": "LetInDeclaration",
+    "declarations": [
+      {
+        "type": "ConstDeclaration",
+        "name": "a",
+        "value": [
+          1,
+          2,
+          3,
+          "Hello World!",
+          5,
+          6,
+          7
+        ],
+        "id": 1
+      }
     ],
-    "id": 7
-  }
-]
-====================================
-Función: splash
-ID: 1
-Secuencia: [
-  {
-    "type": "Block",
-    "statements": {
-      "type": "ReturnStatement",
-      "value": {
-        "type": "LambdaExpression",
-        "params": [],
-        "body": {
+    "body": {
+      "type": "Block",
+      "statements": [
+        {
           "type": "PrintStatement",
           "args": [
-            "Testing helloworld Version 1 ***"
+            {
+              "type": "BinaryExpression",
+              "left": {
+                "type": "BinaryExpression",
+                "left": "*** Testing List Access (",
+                "operator": "+",
+                "right": "a",
+                "id": 2
+              },
+              "operator": "+",
+              "right": ") ***",
+              "id": 3
+            }
           ],
-          "id": 0
+          "id": 4
         },
-        "id": 1
-      },
-      "id": 2
+        {
+          "type": "PrintStatement",
+          "args": [
+            {
+              "type": "ListAccess",
+              "identifier": "a",
+              "index": {
+                "type": "BinaryExpression",
+                "left": {
+                  "type": "ListAccess",
+                  "identifier": "a",
+                  "index": 0,
+                  "id": 5
+                },
+                "operator": "+",
+                "right": 2,
+                "id": 6
+              },
+              "id": 7
+            }
+          ],
+          "id": 8
+        }
+      ],
+      "id": 9
     },
-    "id": 3
+    "id": 0
   }
 ]
 ====================================
-Ejecución completada con éxito. Salida en: outputsParser\versionCompleja1_output.basm
+Ejecución completada con éxito. Salida en: outputsParser\versionCompleja8_output.basm

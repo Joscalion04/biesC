@@ -1,0 +1,23 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDV 2
+BST 0 0                              ;x
+LDV 4
+BST 0 1                              ;z
+LDV 3
+LDF $1
+APP  1                ; goo(3)
+PRN
+HLT
+$END
+;================ goo ====================
+$FUN $1 args:1 parent:$0 ;goo
+BLD 1 1                              ;z
+BLD 0 0                              ;y
+BLD 1 0                              ;x
+LDV "foo"
+CAT
+CAT
+CAT
+RET
+$END

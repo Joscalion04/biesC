@@ -1,0 +1,481 @@
+====================================================================================================
+Función actual:  main
+====================================================================================================
+Atributos de la función:  [
+  {
+    type: 'LetInDeclaration',
+    declarations: [ [Object] ],
+    body: { type: 'Block', statements: [Array], id: 3 },
+    id: 0
+  },
+  { type: 'ConstDeclaration', name: 'z', value: 4, id: 4 },
+  {
+    type: 'FunctionDeclaration',
+    name: 'goo',
+    params: [ 'y' ],
+    body: {
+      type: 'BinaryExpression',
+      left: [Object],
+      operator: '+',
+      right: 'z',
+      id: 7
+    },
+    id: 11
+  },
+  { type: 'Block', statements: [ [Object], [Object] ], id: 12 },
+  { type: 'FunctionCall', functionName: 'goo', args: [ 3 ], id: 13 },
+  { type: 'PrintStatement', args: [ [Object] ], id: 14 }
+]
+====================================================================================================
+Función actual:  goo
+====================================================================================================
+Atributos de la función:  [
+  {
+    type: 'Block',
+    statements: { type: 'ReturnStatement', value: [Object], id: 9 },
+    id: 10
+  }
+]
+Instrucciones:  [
+  ';================ main ====================',
+  '$FUN $0 args:0 parent:$0 ;main',
+  'LDV 2',
+  'BST 0 0                              ;x',
+  'LDV 4',
+  'BST 0 1                              ;z',
+  'LDV 3',
+  'LDF $1',
+  'APP  1                ; goo(3)',
+  'PRN',
+  'HLT',
+  '$END',
+  ';================ goo ====================',
+  '$FUN $1 args:1 parent:$0 ;goo',
+  'BLD 1 1                              ;z',
+  'BLD 0 0                              ;y',
+  'BLD 1 0                              ;x',
+  'LDV "foo"',
+  'CAT',
+  'CAT',
+  'CAT',
+  'RET',
+  '$END'
+]
+undefined
+Archivo fuente: ./test/test_funcionales/versionCompleja5.bies
+Archivo de salida (sysout): outputsParser\versionCompleja5_output.basm
+Archivo de errores (syserr): outputsParser\versionCompleja5_errors.basm
+Nivel de trace: 0
+Ejecutando el parser...
+Atributos procesados por Loader:
+Función: main
+ID: 0
+Secuencia: [
+  {
+    "type": "FunctionDeclaration",
+    "name": "splash",
+    "params": [
+      "msg"
+    ],
+    "body": {
+      "type": "PrintStatement",
+      "args": [
+        "msg"
+      ],
+      "id": 1
+    },
+    "id": 5
+  },
+  {
+    "type": "LetInDeclaration",
+    "declarations": [
+      {
+        "type": "ConstDeclaration",
+        "name": "greet",
+        "value": {
+          "type": "FunctionCall",
+          "functionName": "input",
+          "args": [
+            "Enter greeting>"
+          ],
+          "id": 7
+        },
+        "id": 8
+      }
+    ],
+    "body": {
+      "type": "Block",
+      "statements": [
+        {
+          "type": "ExpressionStatement",
+          "expression": {
+            "type": "IfThenStatement",
+            "condition": {
+              "type": "ComparisionExpression",
+              "left": {
+                "type": "FunctionCall",
+                "functionName": "len",
+                "args": [
+                  "greet"
+                ],
+                "id": 9
+              },
+              "operator": "==",
+              "right": 0,
+              "id": 10
+            },
+            "thenStatement": {
+              "type": "BlockThen",
+              "statements": [
+                {
+                  "type": "ExpressionStatement",
+                  "expression": "Hello World!",
+                  "id": 11
+                }
+              ],
+              "id": 12
+            },
+            "subsequentStatements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": "greet",
+                "id": 13
+              }
+            ],
+            "id": 14
+          },
+          "id": 15
+        }
+      ],
+      "id": 16
+    },
+    "id": 6
+  },
+  {
+    "type": "FunctionDeclaration",
+    "name": "greetings",
+    "params": [],
+    "body": {
+      "type": "LetInDeclaration",
+      "declarations": [
+        {
+          "type": "ConstDeclaration",
+          "name": "greet",
+          "value": {
+            "type": "FunctionCall",
+            "functionName": "input",
+            "args": [
+              "Enter greeting>"
+            ],
+            "id": 7
+          },
+          "id": 8
+        }
+      ],
+      "body": {
+        "type": "Block",
+        "statements": [
+          {
+            "type": "ExpressionStatement",
+            "expression": {
+              "type": "IfThenStatement",
+              "condition": {
+                "type": "ComparisionExpression",
+                "left": {
+                  "type": "FunctionCall",
+                  "functionName": "len",
+                  "args": [
+                    "greet"
+                  ],
+                  "id": 9
+                },
+                "operator": "==",
+                "right": 0,
+                "id": 10
+              },
+              "thenStatement": {
+                "type": "BlockThen",
+                "statements": [
+                  {
+                    "type": "ExpressionStatement",
+                    "expression": "Hello World!",
+                    "id": 11
+                  }
+                ],
+                "id": 12
+              },
+              "subsequentStatements": [
+                {
+                  "type": "ExpressionStatement",
+                  "expression": "greet",
+                  "id": 13
+                }
+              ],
+              "id": 14
+            },
+            "id": 15
+          }
+        ],
+        "id": 16
+      },
+      "id": 6
+    },
+    "id": 20
+  },
+  {
+    "type": "LetInDeclaration",
+    "declarations": [
+      {
+        "type": "PrintStatement",
+        "args": [
+          "msg"
+        ],
+        "id": 1
+      },
+      {
+        "type": "LetInDeclaration",
+        "declarations": [
+          {
+            "type": "ConstDeclaration",
+            "name": "greet",
+            "value": {
+              "type": "FunctionCall",
+              "functionName": "input",
+              "args": [
+                "Enter greeting>"
+              ],
+              "id": 7
+            },
+            "id": 8
+          }
+        ],
+        "body": {
+          "type": "Block",
+          "statements": [
+            {
+              "type": "ExpressionStatement",
+              "expression": {
+                "type": "IfThenStatement",
+                "condition": {
+                  "type": "ComparisionExpression",
+                  "left": {
+                    "type": "FunctionCall",
+                    "functionName": "len",
+                    "args": [
+                      "greet"
+                    ],
+                    "id": 9
+                  },
+                  "operator": "==",
+                  "right": 0,
+                  "id": 10
+                },
+                "thenStatement": {
+                  "type": "BlockThen",
+                  "statements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": "Hello World!",
+                      "id": 11
+                    }
+                  ],
+                  "id": 12
+                },
+                "subsequentStatements": [
+                  {
+                    "type": "ExpressionStatement",
+                    "expression": "greet",
+                    "id": 13
+                  }
+                ],
+                "id": 14
+              },
+              "id": 15
+            }
+          ],
+          "id": 16
+        },
+        "id": 6
+      }
+    ],
+    "body": {
+      "type": "Block",
+      "statements": [
+        {
+          "type": "LetDeclaration",
+          "name": "version",
+          "value": {
+            "type": "BinaryExpression",
+            "left": {
+              "type": "BinaryExpression",
+              "left": 5,
+              "operator": "**",
+              "right": 5,
+              "id": 21
+            },
+            "operator": "/",
+            "right": {
+              "type": "BinaryExpression",
+              "left": 4,
+              "operator": "+",
+              "right": 1,
+              "id": 22
+            },
+            "id": 23
+          },
+          "id": 24
+        },
+        {
+          "type": "ExpressionStatement",
+          "expression": {
+            "type": "FunctionCall",
+            "functionName": "splash",
+            "args": [
+              {
+                "type": "BinaryExpression",
+                "left": {
+                  "type": "BinaryExpression",
+                  "left": "Testing helloworld Version ",
+                  "operator": "+",
+                  "right": "version",
+                  "id": 25
+                },
+                "operator": "+",
+                "right": " ***",
+                "id": 26
+              }
+            ],
+            "id": 27
+          },
+          "id": 28
+        },
+        {
+          "type": "PrintStatement",
+          "args": [
+            {
+              "type": "FunctionCall",
+              "functionName": "greetings",
+              "args": [],
+              "id": 29
+            }
+          ],
+          "id": 30
+        }
+      ],
+      "id": 31
+    },
+    "id": 0
+  }
+]
+====================================
+Función: splash
+ID: 1
+Secuencia: [
+  {
+    "type": "Block",
+    "statements": {
+      "type": "ReturnStatement",
+      "value": {
+        "type": "LambdaExpression",
+        "params": [
+          "msg"
+        ],
+        "body": {
+          "type": "PrintStatement",
+          "args": [
+            "msg"
+          ],
+          "id": 1
+        },
+        "id": 2
+      },
+      "id": 3
+    },
+    "id": 4
+  }
+]
+====================================
+Función: greetings
+ID: 2
+Secuencia: [
+  {
+    "type": "Block",
+    "statements": {
+      "type": "ReturnStatement",
+      "value": {
+        "type": "LambdaExpression",
+        "params": [],
+        "body": {
+          "type": "LetInDeclaration",
+          "declarations": [
+            {
+              "type": "ConstDeclaration",
+              "name": "greet",
+              "value": {
+                "type": "FunctionCall",
+                "functionName": "input",
+                "args": [
+                  "Enter greeting>"
+                ],
+                "id": 7
+              },
+              "id": 8
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "IfThenStatement",
+                  "condition": {
+                    "type": "ComparisionExpression",
+                    "left": {
+                      "type": "FunctionCall",
+                      "functionName": "len",
+                      "args": [
+                        "greet"
+                      ],
+                      "id": 9
+                    },
+                    "operator": "==",
+                    "right": 0,
+                    "id": 10
+                  },
+                  "thenStatement": {
+                    "type": "BlockThen",
+                    "statements": [
+                      {
+                        "type": "ExpressionStatement",
+                        "expression": "Hello World!",
+                        "id": 11
+                      }
+                    ],
+                    "id": 12
+                  },
+                  "subsequentStatements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": "greet",
+                      "id": 13
+                    }
+                  ],
+                  "id": 14
+                },
+                "id": 15
+              }
+            ],
+            "id": 16
+          },
+          "id": 6
+        },
+        "id": 17
+      },
+      "id": 18
+    },
+    "id": 19
+  }
+]
+====================================
+Ejecución completada con éxito. Salida en: outputsParser\versionCompleja5_output.basm

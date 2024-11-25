@@ -1,0 +1,7 @@
+runTranspiler is not defined
+Trace de errores: ReferenceError: runTranspiler is not defined
+    at file:///C:/Users/jgame/OneDrive/Escritorio/UNA/VI%20Semestre/Paradigmas/Trabajos/Proyecto%20II/biesC/commander.js:60:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:222:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:323:24)
+    at async loadESM (node:internal/process/esm_loader:28:7)
+    at async handleMainPromise (node:internal/modules/run_main:113:12)

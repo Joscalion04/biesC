@@ -70,7 +70,7 @@ function parseBIESCode(inputFile) {
   loader.visit(AST);
 
   // Muestra los resultados procesados por el loader (atributos)
-  console.log("Atributos procesados por Loader:");
+  //console.log("Atributos procesados por Loader:");
   loader.getResults();  // Muestra el resultado final
 
   /**

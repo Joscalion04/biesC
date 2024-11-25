@@ -1,0 +1,23 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDV 664
+LDV 666
+SUB
+BST 0 0                              ;version
+LDV "***"
+BLD 0 0                              ;version
+LDV "Testing helloworld Version "
+CAT
+CAT
+LDF $1
+APP  1                ; splash([object Object])
+LDV "Hello World!"
+PRN
+HLT
+$END
+;================ splash ====================
+$FUN $1 args:1 parent:$0 ;splash
+BLD 0 0                              ;msg
+PRN
+RET
+$END

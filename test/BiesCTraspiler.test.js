@@ -9,6 +9,9 @@ const testFiles = [
     'versionCompleja3.bies',
     'versionCompleja4.bies',
     'versionCompleja5.bies',
+    'versionCompleja5_2.bies',
+    'versionCompleja5_3.bies',
+    'versionCompleja5_4.bies',
     'versionCompleja6.bies',
     'versionCompleja7.bies',
     'versionCompleja8.bies',
@@ -17,7 +20,7 @@ const testFiles = [
 
 const basePath = './test/test_funcionales';
 const outputDir = './outputsParser';
-const traspilerOutputDir = './outputTraspiler';
+const traspilerOutputDir = 'C:/Users/jgame/OneDrive/Escritorio/UNA/VI Semestre/Paradigmas/Trabajos/Proyecto I/biesVM/test/';
 const additionalOutputDir = '../biesVM/test'; // Carpeta adicional en `biesVM/test`
 
 // Crear las carpetas de outputs si no existen

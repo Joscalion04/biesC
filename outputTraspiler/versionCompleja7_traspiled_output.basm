@@ -1,0 +1,34 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDV 10
+BST 0 0                              ;x
+LDV 20
+BST 0 1                              ;y
+LDV ") ***"
+BLD 0 1                              ;y
+LDV " ,"
+BLD 0 0                              ;x
+LDV "*** Testing max("
+CAT
+CAT
+CAT
+CAT
+PRN
+BLD 0 0                              ;x
+BLD 0 1                              ;y
+LDF $1
+APP  2                ; max(x, y)
+PRN
+HLT
+$END
+;================ max ====================
+$FUN $1 args:2 parent:$0 ;max
+BLD 0 1                              ;y
+BLD 0 0                              ;x
+GT
+BF 3              ; if(x > y)
+BLD 0 0                              ;x
+BR 2
+BLD 0 1                              ;y
+RET
+$END

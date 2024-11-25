@@ -1,0 +1,26 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDV "Ingrese numero: "
+PRN
+INP
+BST 0 0                              ;number
+BLD 0 0                              ;number
+LDF $1
+APP  1                ; isPositive(number)
+PRN
+HLT
+$END
+;================ isPositive ====================
+$FUN $1 args:1 parent:$0 ;isPositive
+LDV 0
+BLD 0 0                              ;n
+GT
+BF 3              ; if(n > 0)
+LDV "Positivo"
+BR 2
+LDV "Negativo"
+BST 0 1                              ;result
+BLD 0 1                              ;result
+PRN
+RET
+$END

@@ -1,0 +1,15 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+HLT
+$END
+;================ max ====================
+$FUN $1 args:2 parent:$0 ;max
+LDV "y"
+LDV "x"
+GT
+BF 3              ; if(x > y)
+LDV "x"
+BR 2
+LDV "y"
+RET
+$END

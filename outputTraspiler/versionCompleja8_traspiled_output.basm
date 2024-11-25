@@ -1,0 +1,20 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDV [1, 2, 3, "Hello World!", 5, 6, 7]
+BST 0 0                              ;a
+LDV ") ***"
+BLD 0 0                              ;a
+LDV "*** Testing List Access ("
+CAT
+CAT
+PRN
+BLD 0 0
+LDV 2
+BLD 0 0
+LDV 0
+LTK
+ADD
+LTK
+PRN
+HLT
+$END

@@ -1,11 +1,11 @@
 ;================ main ====================
 $FUN $0 args:0 parent:$0 ;main
 LDV 1
-LDV 4
+LDV 3
 ADD
-LDV 5
-LDV 5
-POW
+LDV 4
+LDV 4
+MUL
 DIV
 BST 0 0                              ;version
 LDV " ***"
@@ -28,17 +28,6 @@ RET
 $END
 ;================ greetings ====================
 $FUN $2 args:0 parent:$0 ;greetings
-LDV "Enter greeting>"
-PRN
-INP
-BST 0 0                              ;greet
-LDV 0
-BLD 0 0                              ;greet
-LEN
-EQ
-BF 3              ; if([object Object] == 0)
 LDV "Hello World!"
-BR 2
-BLD 0 0                              ;greet
 RET
 $END

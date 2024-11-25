@@ -1,0 +1,8 @@
+;================ main ====================
+$FUN $0 args:0 parent:$0 ;main
+LDV "Testing helloworld Version 0 ***"
+PRN
+LDV "Hello World!"
+PRN
+HLT
+$END

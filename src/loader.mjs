@@ -84,7 +84,6 @@ class Loader extends biesGrammarVisitor {
     
         // Guardamos el estado de la pila de alcance antes de entrar al bloque let-in
         this.pushScope();
-    
         // Procesamos las declaraciones const
         const constDeclarations = ctx.constDeclaration();
         for (const constDecl of constDeclarations) {

@@ -11,11 +11,10 @@ import fs from 'fs'; // Importar el módulo fs para trabajar con archivos
 */
 
 // Ejecutar el parser con el archivo de prueba test1.bies
-traspilerBIESCode("./test/test_funcionales/versionCompleja5_3.bies");
+parseBIESCode("./test/test_funcionales/versionCompleja5_4.bies");
 //parseBIESCode("./test/test_unitarios/test2.bies");
 //traspilerBIESCode("./test/test_funcionales/versionCompleja6.bies");
 
 // Ejecutar el parser con el archivo pasado por parámetro desde el terminal con ayuda del commander
-export default function runParser(filePath) {
-    return parseBIESCode(filePath);
-}
+export default function runParser(filePath) {return traspilerBIESCode(filePath);}
+

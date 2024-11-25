@@ -1,0 +1,354 @@
+====================================================================================================
+Función actual:  main
+====================================================================================================
+Atributos de la función:  [
+  {
+    type: 'LetInDeclaration',
+    declarations: [ [Object] ],
+    body: { type: 'Block', statements: [Array], id: 3 },
+    id: 0
+  },
+  { type: 'ConstDeclaration', name: 'z', value: 4, id: 4 },
+  {
+    type: 'FunctionDeclaration',
+    name: 'goo',
+    params: [ 'y' ],
+    body: {
+      type: 'BinaryExpression',
+      left: [Object],
+      operator: '+',
+      right: 'z',
+      id: 7
+    },
+    id: 11
+  },
+  { type: 'Block', statements: [ [Object], [Object] ], id: 12 },
+  { type: 'FunctionCall', functionName: 'goo', args: [ 3 ], id: 13 },
+  { type: 'PrintStatement', args: [ [Object] ], id: 14 }
+]
+====================================================================================================
+Función actual:  goo
+====================================================================================================
+Atributos de la función:  [
+  {
+    type: 'Block',
+    statements: { type: 'ReturnStatement', value: [Object], id: 9 },
+    id: 10
+  }
+]
+Instrucciones:  [
+  ';================ main ====================',
+  '$FUN $0 args:0 parent:$0 ;main',
+  'LDV 2',
+  'BST 0 0                              ;x',
+  'LDV 4',
+  'BST 0 1                              ;z',
+  'LDV 3',
+  'LDF $1',
+  'APP  1                ; goo(3)',
+  'PRN',
+  'HLT',
+  '$END',
+  ';================ goo ====================',
+  '$FUN $1 args:1 parent:$0 ;goo',
+  'BLD 1 1                              ;z',
+  'BLD 0 0                              ;y',
+  'BLD 1 0                              ;x',
+  'LDV "foo"',
+  'CAT',
+  'CAT',
+  'CAT',
+  'RET',
+  '$END'
+]
+undefined
+Archivo fuente: ./test/test_funcionales/versionCompleja7.bies
+Archivo de salida (sysout): outputsParser\versionCompleja7_output.basm
+Archivo de errores (syserr): outputsParser\versionCompleja7_errors.basm
+Nivel de trace: 0
+Ejecutando el parser...
+Atributos procesados por Loader:
+Función: main
+ID: 0
+Secuencia: [
+  {
+    "type": "ExpressionStatement",
+    "expression": {
+      "type": "IfThenStatement",
+      "condition": {
+        "type": "ComparisionExpression",
+        "left": "x",
+        "operator": ">",
+        "right": "y",
+        "id": 0
+      },
+      "thenStatement": {
+        "type": "BlockThen",
+        "statements": [
+          {
+            "type": "ExpressionStatement",
+            "expression": "x",
+            "id": 1
+          }
+        ],
+        "id": 2
+      },
+      "subsequentStatements": [
+        {
+          "type": "ExpressionStatement",
+          "expression": "y",
+          "id": 3
+        }
+      ],
+      "id": 4
+    },
+    "id": 5
+  },
+  {
+    "type": "Block",
+    "statements": [
+      {
+        "type": "ExpressionStatement",
+        "expression": {
+          "type": "IfThenStatement",
+          "condition": {
+            "type": "ComparisionExpression",
+            "left": "x",
+            "operator": ">",
+            "right": "y",
+            "id": 0
+          },
+          "thenStatement": {
+            "type": "BlockThen",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": "x",
+                "id": 1
+              }
+            ],
+            "id": 2
+          },
+          "subsequentStatements": [
+            {
+              "type": "ExpressionStatement",
+              "expression": "y",
+              "id": 3
+            }
+          ],
+          "id": 4
+        },
+        "id": 5
+      }
+    ],
+    "id": 6
+  },
+  {
+    "type": "FunctionDeclaration",
+    "name": "max",
+    "params": [
+      "x"
+    ],
+    "body": {
+      "type": "Block",
+      "statements": {
+        "type": "ReturnStatement",
+        "value": {
+          "type": "LambdaExpression",
+          "params": [
+            "y"
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "IfThenStatement",
+                  "condition": {
+                    "type": "ComparisionExpression",
+                    "left": "x",
+                    "operator": ">",
+                    "right": "y",
+                    "id": 0
+                  },
+                  "thenStatement": {
+                    "type": "BlockThen",
+                    "statements": [
+                      {
+                        "type": "ExpressionStatement",
+                        "expression": "x",
+                        "id": 1
+                      }
+                    ],
+                    "id": 2
+                  },
+                  "subsequentStatements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": "y",
+                      "id": 3
+                    }
+                  ],
+                  "id": 4
+                },
+                "id": 5
+              }
+            ],
+            "id": 6
+          },
+          "id": 7
+        },
+        "id": 8
+      },
+      "id": 9
+    },
+    "id": 13
+  },
+  {
+    "type": "LetInDeclaration",
+    "declarations": [
+      {
+        "type": "ConstDeclaration",
+        "name": "x",
+        "value": 10,
+        "id": 15
+      },
+      {
+        "type": "ConstDeclaration",
+        "name": "y",
+        "value": 20,
+        "id": 16
+      }
+    ],
+    "body": {
+      "type": "Block",
+      "statements": [
+        {
+          "type": "PrintStatement",
+          "args": [
+            {
+              "type": "BinaryExpression",
+              "left": {
+                "type": "BinaryExpression",
+                "left": {
+                  "type": "BinaryExpression",
+                  "left": {
+                    "type": "BinaryExpression",
+                    "left": "*** Testing max(",
+                    "operator": "+",
+                    "right": "x",
+                    "id": 17
+                  },
+                  "operator": "+",
+                  "right": " ,",
+                  "id": 18
+                },
+                "operator": "+",
+                "right": "y",
+                "id": 19
+              },
+              "operator": "+",
+              "right": ") ***",
+              "id": 20
+            }
+          ],
+          "id": 21
+        },
+        {
+          "type": "PrintStatement",
+          "args": [
+            {
+              "type": "FunctionCall",
+              "functionName": "max",
+              "args": [
+                "x",
+                "y"
+              ],
+              "id": 22
+            }
+          ],
+          "id": 23
+        }
+      ],
+      "id": 24
+    },
+    "id": 14
+  }
+]
+====================================
+Función: max
+ID: 1
+Secuencia: [
+  {
+    "type": "Block",
+    "statements": {
+      "type": "ReturnStatement",
+      "value": {
+        "type": "LambdaExpression",
+        "params": [
+          "x"
+        ],
+        "body": {
+          "type": "Block",
+          "statements": {
+            "type": "ReturnStatement",
+            "value": {
+              "type": "LambdaExpression",
+              "params": [
+                "y"
+              ],
+              "body": {
+                "type": "Block",
+                "statements": [
+                  {
+                    "type": "ExpressionStatement",
+                    "expression": {
+                      "type": "IfThenStatement",
+                      "condition": {
+                        "type": "ComparisionExpression",
+                        "left": "x",
+                        "operator": ">",
+                        "right": "y",
+                        "id": 0
+                      },
+                      "thenStatement": {
+                        "type": "BlockThen",
+                        "statements": [
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": "x",
+                            "id": 1
+                          }
+                        ],
+                        "id": 2
+                      },
+                      "subsequentStatements": [
+                        {
+                          "type": "ExpressionStatement",
+                          "expression": "y",
+                          "id": 3
+                        }
+                      ],
+                      "id": 4
+                    },
+                    "id": 5
+                  }
+                ],
+                "id": 6
+              },
+              "id": 7
+            },
+            "id": 8
+          },
+          "id": 9
+        },
+        "id": 10
+      },
+      "id": 11
+    },
+    "id": 12
+  }
+]
+====================================
+Ejecución completada con éxito. Salida en: outputsParser\versionCompleja7_output.basm
